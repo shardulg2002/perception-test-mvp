@@ -140,8 +140,10 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
   useEffect(() => {
     if (scenarioState !== 'playing') return;
 
+    console.log('🚙 ILLUSION TEST - Starting animation');
     const startTime = performance.now();
     timingRef.current.startTime = startTime;
+    let localUserAction = null; // Track user action locally
 
     const animate = () => {
       const currentTime = performance.now();
@@ -150,22 +152,32 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
       // Move hazard car toward player
       const distance = (CONFIG.HAZARD_SPEED * elapsed) / 1000;
       const newPosition = CONFIG.HAZARD_START_X - distance;
+      console.log(`🎬 Hazard: elapsed=${elapsed.toFixed(0)}ms, pos=${newPosition.toFixed(1)}px`);
       setHazardPosition(newPosition);
 
       // Check if time is up
       if (elapsed >= CONFIG.SCENARIO_DURATION) {
+        console.log('⏱️ ILLUSION TEST - Time up, scenario finished');
         setScenarioState('finished');
-        const outcome = calculateOutcome(userAction, mode);
+        
+        // Read latest userAction from state at the end
+        setUserAction(prevAction => {
+          localUserAction = prevAction;
+          return prevAction;
+        });
         
         setTimeout(() => {
-          onComplete({
-            mode,
-            action: userAction,
-            reactionTime: timingRef.current.actionTime 
-              ? timingRef.current.actionTime - startTime 
-              : null,
-            ...outcome
-          });
+          const outcome = calculateOutcome(localUserAction, mode);
+          if (onComplete) {
+            onComplete({
+              mode,
+              action: localUserAction,
+              reactionTime: timingRef.current.actionTime 
+                ? timingRef.current.actionTime - startTime 
+                : null,
+              ...outcome
+            });
+          }
         }, 500);
         return;
       }
@@ -180,7 +192,7 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [scenarioState, userAction, mode, calculateOutcome, onComplete]);
+  }, [scenarioState]); // Only depend on scenarioState
 
   /**
    * Keyboard listeners

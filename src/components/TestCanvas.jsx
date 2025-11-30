@@ -33,6 +33,79 @@ export default function TestCanvas({ onTestComplete, onTestStart }) {
     collisionTime: null
   });
 
+  // Debug render log
+  console.log(`🔄 RENDER: state=${testState}, carPos=${carPosition.toFixed(1)}, visible=${isCarVisible}`);
+
+  /**
+   * Start the actual test
+   */
+  const startTest = () => {
+    console.log('🚗 START TEST - Setting state to running');
+    setTestState('running');
+    setCarPosition(CONFIG.CAR_START_X);
+    setIsCarVisible(true);
+    setShowCollision(false);
+    
+    const startTime = performance.now();
+    timingRef.current = {
+      startTime,
+      hideTime: null,
+      stopTime: null,
+      collisionTime: null
+    };
+
+    if (onTestStart) onTestStart();
+    
+    // Animation loop
+    const animateLoop = () => {
+      const currentTime = performance.now();
+      const elapsed = currentTime - startTime;
+      const distance = (CALCULATED_SPEED * elapsed) / 1000;
+      const newPosition = CONFIG.CAR_START_X + distance;
+      
+      console.log(`🎬 Frame: elapsed=${elapsed.toFixed(0)}ms, pos=${newPosition.toFixed(1)}px`);
+      setCarPosition(newPosition);
+
+      // Check if car should be hidden
+      if (elapsed >= CONFIG.VISIBLE_DURATION && timingRef.current.hideTime === null) {
+        console.log('🙈 HIDING CAR at', elapsed.toFixed(0), 'ms');
+        setIsCarVisible(false);
+        timingRef.current.hideTime = currentTime;
+        setTestState('hidden');
+      }
+
+      // Check for collision
+      if (newPosition + CONFIG.CAR_WIDTH >= CONFIG.OBSTACLE_X) {
+        console.log('💥 COLLISION DETECTED');
+        timingRef.current.collisionTime = currentTime;
+        setShowCollision(true);
+        setTestState('finished');
+        
+        const result = {
+          outcome: 'fail',
+          visibleDuration: CONFIG.VISIBLE_DURATION,
+          speed: CALCULATED_SPEED,
+          hideTime: timingRef.current.hideTime,
+          stopTime: null,
+          collisionTime: currentTime,
+          positionAtStop: newPosition,
+          distanceToObstacle: CONFIG.OBSTACLE_X - newPosition - CONFIG.CAR_WIDTH,
+          reactionLatency: null
+        };
+
+        setTimeout(() => {
+          if (onTestComplete) onTestComplete(result);
+        }, 500);
+        return;
+      }
+
+      animationRef.current = requestAnimationFrame(animateLoop);
+    };
+    
+    console.log('🎬 STARTING ANIMATION LOOP');
+    animationRef.current = requestAnimationFrame(animateLoop);
+  };
+
   /**
    * Handle stop button press
    */
@@ -74,86 +147,24 @@ export default function TestCanvas({ onTestComplete, onTestStart }) {
   /**
    * Start countdown before test
    */
-  const startCountdown = useCallback(() => {
+  const startCountdown = () => {
+    console.log('⏱️ STARTING COUNTDOWN');
     setTestState('countdown');
     setCountdown(3);
     
     let count = 3;
     const countdownInterval = setInterval(() => {
       count -= 1;
+      console.log('⏱️ Countdown:', count);
       setCountdown(count);
       
       if (count === 0) {
         clearInterval(countdownInterval);
+        console.log('⏱️ Countdown finished, calling startTest()');
         startTest();
       }
     }, 1000);
-  }, []);
-
-  /**
-   * Start the actual test
-   */
-  const startTest = useCallback(() => {
-    setTestState('running');
-    setCarPosition(CONFIG.CAR_START_X);
-    setIsCarVisible(true);
-    setShowCollision(false);
-    
-    const startTime = performance.now();
-    timingRef.current = {
-      startTime,
-      hideTime: null,
-      stopTime: null,
-      collisionTime: null
-    };
-
-    onTestStart();
-    
-    // Animation loop
-    const animateLoop = () => {
-      const currentTime = performance.now();
-      const elapsed = currentTime - startTime;
-      const distance = (CALCULATED_SPEED * elapsed) / 1000;
-      const newPosition = CONFIG.CAR_START_X + distance;
-      
-      setCarPosition(newPosition);
-
-      // Check if car should be hidden
-      if (elapsed >= CONFIG.VISIBLE_DURATION && timingRef.current.hideTime === null) {
-        setIsCarVisible(false);
-        timingRef.current.hideTime = currentTime;
-        setTestState('hidden');
-      }
-
-      // Check for collision
-      if (newPosition + CONFIG.CAR_WIDTH >= CONFIG.OBSTACLE_X) {
-        timingRef.current.collisionTime = currentTime;
-        setShowCollision(true);
-        setTestState('finished');
-        
-        const result = {
-          outcome: 'fail',
-          visibleDuration: CONFIG.VISIBLE_DURATION,
-          speed: CALCULATED_SPEED,
-          hideTime: timingRef.current.hideTime,
-          stopTime: null,
-          collisionTime: currentTime,
-          positionAtStop: newPosition,
-          distanceToObstacle: CONFIG.OBSTACLE_X - newPosition - CONFIG.CAR_WIDTH,
-          reactionLatency: null
-        };
-
-        setTimeout(() => {
-          onTestComplete(result);
-        }, 500);
-        return;
-      }
-
-      animationRef.current = requestAnimationFrame(animateLoop);
-    };
-    
-    animationRef.current = requestAnimationFrame(animateLoop);
-  }, [onTestStart, onTestComplete]);
+  };
 
   /**
    * Keyboard event handler
