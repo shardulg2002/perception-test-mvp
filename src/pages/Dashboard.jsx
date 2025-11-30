@@ -4,13 +4,14 @@ import { Link } from 'react-router-dom';
 
 /**
  * Dashboard Component
- * Displays all test attempts with filtering and export capabilities
+ * Displays comprehensive data from all experiments
  */
 export default function Dashboard() {
   const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all'); // all | success | fail
+  const [filter, setFilter] = useState('all'); // all | perception | fuelPump | illusion
+  const [sessionData, setSessionData] = useState(null);
   const [stats, setStats] = useState({
     total: 0,
     success: 0,
@@ -20,11 +21,28 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadAttempts();
+    loadLocalSessionData();
   }, []);
 
   useEffect(() => {
     calculateStats();
   }, [attempts]);
+
+  const loadLocalSessionData = () => {
+    // Load data from current session (localStorage)
+    const sessionId = sessionStorage.getItem('sessionId');
+    if (sessionId) {
+      const sessionKey = `session_${sessionId}`;
+      const data = localStorage.getItem(sessionKey);
+      if (data) {
+        try {
+          setSessionData(JSON.parse(data));
+        } catch (e) {
+          console.error('Error parsing session data:', e);
+        }
+      }
+    }
+  };
 
   const loadAttempts = async () => {
     setLoading(true);
@@ -159,6 +177,212 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Current Session Data - All 3 Experiments */}
+        {sessionData && (
+          <div className="mb-8">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-lg">
+              <h2 className="text-2xl font-bold">📋 Current Session - All Experiments</h2>
+              <p className="text-sm mt-1 opacity-90">
+                Candidate: {sessionData.demographics?.name} | App No: {sessionData.demographics?.applicationNumber}
+              </p>
+            </div>
+
+            {/* Experiment 1: Perception Test */}
+            {sessionData.perceptionResults && sessionData.perceptionResults.length > 0 && (
+              <div className="bg-white p-6 border-x border-b">
+                <h3 className="text-xl font-bold text-blue-600 mb-4">🚗 Experiment 1: Perception Test</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div className="bg-blue-50 p-3 rounded">
+                    <div className="text-xs text-gray-600">Trials</div>
+                    <div className="text-2xl font-bold text-blue-600">{sessionData.perceptionResults.length}</div>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded">
+                    <div className="text-xs text-gray-600">Success</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {sessionData.perceptionResults.filter(r => r.outcome === 'success').length}
+                    </div>
+                  </div>
+                  <div className="bg-red-50 p-3 rounded">
+                    <div className="text-xs text-gray-600">Collisions</div>
+                    <div className="text-2xl font-bold text-red-600">
+                      {sessionData.perceptionResults.filter(r => r.outcome === 'collision').length}
+                    </div>
+                  </div>
+                  <div className="bg-purple-50 p-3 rounded">
+                    <div className="text-xs text-gray-600">Success Rate</div>
+                    <div className="text-2xl font-bold text-purple-600">
+                      {Math.round((sessionData.perceptionResults.filter(r => r.outcome === 'success').length / sessionData.perceptionResults.length) * 100)}%
+                    </div>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Trial</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Outcome</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Reaction Time</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Distance</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {sessionData.perceptionResults.map((trial, idx) => (
+                        <tr key={idx} className={trial.outcome === 'success' ? 'bg-green-50' : 'bg-red-50'}>
+                          <td className="px-3 py-2">{trial.trial || idx + 1}</td>
+                          <td className="px-3 py-2">
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              trial.outcome === 'success' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'
+                            }`}>
+                              {trial.outcome === 'success' ? '✅' : '💥'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">{trial.reactionLatency?.toFixed(0) || 'N/A'} ms</td>
+                          <td className="px-3 py-2">{trial.distanceToObstacle?.toFixed(1) || 'N/A'} px</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Experiment 2: Fuel Pump */}
+            {sessionData.fuelPumpResult && (
+              <div className="bg-white p-6 border-x border-b">
+                <h3 className="text-xl font-bold text-yellow-600 mb-4">⛽ Experiment 2: Fuel Pump Risk Task</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div className="bg-yellow-50 p-3 rounded">
+                    <div className="text-xs text-gray-600">Total Points</div>
+                    <div className="text-2xl font-bold text-yellow-600">{sessionData.fuelPumpResult.totalPoints}</div>
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded">
+                    <div className="text-xs text-gray-600">Trials</div>
+                    <div className="text-2xl font-bold text-blue-600">{sessionData.fuelPumpResult.trials?.length || 0}</div>
+                  </div>
+                  <div className="bg-red-50 p-3 rounded">
+                    <div className="text-xs text-gray-600">Explosions</div>
+                    <div className="text-2xl font-bold text-red-600">
+                      {sessionData.fuelPumpResult.trials?.filter(t => t.exploded).length || 0}
+                    </div>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded">
+                    <div className="text-xs text-gray-600">Avg Pumps</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {sessionData.fuelPumpResult.trials && sessionData.fuelPumpResult.trials.length > 0
+                        ? (sessionData.fuelPumpResult.trials.reduce((sum, t) => sum + t.pumps, 0) / sessionData.fuelPumpResult.trials.length).toFixed(1)
+                        : '0'}
+                    </div>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Trial</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Pumps</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Points</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {sessionData.fuelPumpResult.trials?.map((trial, idx) => (
+                        <tr key={idx} className={trial.exploded ? 'bg-red-50' : 'bg-green-50'}>
+                          <td className="px-3 py-2">{idx + 1}</td>
+                          <td className="px-3 py-2">{trial.pumps}</td>
+                          <td className="px-3 py-2">{trial.pointsEarned}</td>
+                          <td className="px-3 py-2">
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              trial.exploded ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'
+                            }`}>
+                              {trial.exploded ? '💥' : '✅'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Experiment 3: Illusion of Control */}
+            {sessionData.illusionResult && sessionData.illusionResult.scenarios && (
+              <div className="bg-white p-6 border-x border-b rounded-b-lg">
+                <h3 className="text-xl font-bold text-purple-600 mb-4">🎮 Experiment 3: Illusion of Control</h3>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                  <div className="bg-purple-50 p-3 rounded">
+                    <div className="text-xs text-gray-600">Scenarios</div>
+                    <div className="text-2xl font-bold text-purple-600">{sessionData.illusionResult.scenarios.length}</div>
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded">
+                    <div className="text-xs text-gray-600">Manual</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {sessionData.illusionResult.scenarios.filter(s => s.mode === 'manual').length}
+                    </div>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded">
+                    <div className="text-xs text-gray-600">Safe Pass</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {sessionData.illusionResult.scenarios.filter(s => s.result === 'safe-pass').length}
+                    </div>
+                  </div>
+                  <div className="bg-yellow-50 p-3 rounded">
+                    <div className="text-xs text-gray-600">Near-Miss</div>
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {sessionData.illusionResult.scenarios.filter(s => s.result === 'near-miss').length}
+                    </div>
+                  </div>
+                  <div className="bg-red-50 p-3 rounded">
+                    <div className="text-xs text-gray-600">Crashes</div>
+                    <div className="text-2xl font-bold text-red-600">
+                      {sessionData.illusionResult.scenarios.filter(s => s.result === 'crash').length}
+                    </div>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Scenario</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Mode</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Action</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Result</th>
+                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Attribution</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {sessionData.illusionResult.scenarios.map((scenario, idx) => (
+                        <tr key={idx}>
+                          <td className="px-3 py-2">#{scenario.scenarioId}</td>
+                          <td className="px-3 py-2">
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              scenario.mode === 'manual' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800'
+                            }`}>
+                              {scenario.mode === 'manual' ? '🚗' : '🤖'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-xs">{scenario.action || 'None'}</td>
+                          <td className="px-3 py-2">
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              scenario.result === 'crash' ? 'bg-red-200 text-red-800' :
+                              scenario.result === 'near-miss' ? 'bg-yellow-200 text-yellow-800' :
+                              'bg-green-200 text-green-800'
+                            }`}>
+                              {scenario.result === 'crash' ? '💥' :
+                               scenario.result === 'near-miss' ? '⚠️' : '✅'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-xs">{scenario.attributionAnswer || 'N/A'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Controls */}
         <div className="bg-white p-6 rounded-lg shadow mb-6">

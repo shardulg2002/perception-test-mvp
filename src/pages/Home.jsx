@@ -131,6 +131,9 @@ export default function Home() {
     // Save illusion test result
     setIsSaving(true);
     await saveIllusionResult(result);
+    
+    // Save complete session data to localStorage
+    saveCompleteSessionData(result);
     setIsSaving(false);
     
     setCurrentTest('complete');
@@ -144,13 +147,7 @@ export default function Home() {
     const illusionData = {
       session_id: sessionId,
       test_type: 'illusion_of_control',
-      mode: result.mode,
-      action: result.action,
-      reaction_time_ms: result.reactionTime,
-      outcome: result.result,
-      description: result.description,
-      system_attribution: result.systemAttribution,
-      user_attribution: result.userAttribution,
+      scenarios: result.scenarios,
       client_info: {
         ...clientInfo,
         demographics: userDemographics
@@ -160,6 +157,27 @@ export default function Home() {
     console.log('Illusion data to save:', illusionData);
     // When you're ready to save to database, uncomment:
     // const { error } = await saveAttempt(illusionData);
+  };
+
+  const saveCompleteSessionData = (illusionResult) => {
+    const completeData = {
+      sessionId: sessionId,
+      timestamp: new Date().toISOString(),
+      demographics: userDemographics,
+      perceptionResults: perceptionTrialResults,
+      fuelPumpResult: fuelPumpResult,
+      illusionResult: illusionResult,
+      clientInfo: clientInfo
+    };
+
+    // Save to localStorage
+    const sessionKey = `session_${sessionId}`;
+    localStorage.setItem(sessionKey, JSON.stringify(completeData));
+    
+    // Also save to sessionStorage for quick access
+    sessionStorage.setItem('sessionId', sessionId);
+    
+    console.log('Complete session data saved:', completeData);
   };
 
   if (!userDemographics) {
