@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
+import { SCENARIO_OUTCOMES } from './scenarioOutcomes';
 
 const CONFIG = {
   SCENARIO_DURATION: 2000, // 2 seconds to react
@@ -9,7 +10,7 @@ const CONFIG = {
   HAZARD_SPEED: 200, // pixels per second
 };
 
-export default function IllusionTestCanvas({ mode, onComplete }) {
+export default function IllusionTestCanvas({ mode, scenarioId = 1, onComplete }) {
   const [scenarioState, setScenarioState] = useState('playing'); // playing | finished
   const [userAction, setUserAction] = useState(null); // left, right, accelerate, brake, none
   const [hazardPosition, setHazardPosition] = useState(CONFIG.HAZARD_START_X);
@@ -25,80 +26,27 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
   });
 
   /**
-   * Calculate outcome based on mode and action
+   * Calculate outcome based on mode and action using scenario-specific outcomes
    */
   const calculateOutcome = (action, mode) => {
-    if (mode === 'assist' && action === null) {
-      // No intervention - system handles it
+    const scenarioOutcomes = SCENARIO_OUTCOMES[scenarioId];
+    
+    if (!scenarioOutcomes) {
+      console.error('No outcomes found for scenario:', scenarioId);
       return {
-        result: 'near-miss',
-        description: 'System handles it, but just barely. Near-Miss (Fast braking, close distance).',
-        attribution: 'Other Driver'
+        result: 'safe-pass',
+        description: 'Scenario completed.',
+        attribution: 'Unknown'
       };
     }
 
-    if (mode === 'manual' && action === null) {
-      // No action in manual mode
-      return {
-        result: 'crash',
-        description: 'No intervention taken. Collision occurred.',
-        attribution: 'Self'
-      };
-    }
-
-    // User took action
-    const outcomes = {
-      brake: {
-        manual: {
-          result: 'near-miss',
-          description: 'Quick brake! You managed to slow down just in time. Near-Miss.',
-          attribution: 'Self'
-        },
-        assist: {
-          result: 'crash',
-          description: 'Brake: System\'s automatic braking and your manual brake are out of sync, leading to a Minor Collision (scrape).',
-          attribution: 'System Conflict'
-        }
-      },
-      accelerate: {
-        manual: {
-          result: 'near-miss',
-          description: 'You accelerated past the hazard. Close call but safe. Near-Miss.',
-          attribution: 'Self'
-        },
-        assist: {
-          result: 'near-miss',
-          description: 'Accelerate: System overrides your acceleration to prevent collision, leading to a sudden, but safe, Near-Miss.',
-          attribution: 'Driver-Assist'
-        }
-      },
-      left: {
-        manual: {
-          result: 'near-miss',
-          description: 'Steered left into the adjacent lane. Close but avoided collision. Near-Miss.',
-          attribution: 'Self'
-        },
-        assist: {
-          result: 'near-miss',
-          description: 'Steer Left: System attempts to keep lane; resulting conflict leads to a Near-Miss (Loud Horn/Swerve).',
-          attribution: 'Self/Driver-Assist Conflict'
-        }
-      },
-      right: {
-        manual: {
-          result: 'near-miss',
-          description: 'Steered right into the adjacent lane. Narrowly avoided the hazard. Near-Miss.',
-          attribution: 'Self'
-        },
-        assist: {
-          result: 'near-miss',
-          description: 'Steer Right: System attempts to keep lane; resulting conflict leads to a Near-Miss (Loud Horn/Swerve).',
-          attribution: 'Self/Driver-Assist Conflict'
-        }
-      }
-    };
-
-    return outcomes[action][mode];
+    // Get the outcome for the current mode
+    const modeOutcomes = scenarioOutcomes[mode];
+    
+    // If no action taken, use null key
+    const outcomeKey = action || null;
+    
+    return modeOutcomes[outcomeKey];
   };
 
   /**
