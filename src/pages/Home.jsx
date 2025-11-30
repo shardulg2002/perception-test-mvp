@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import TestCanvas from '../components/TestCanvas';
 import ResultCard from '../components/ResultCard';
 import HowItWorksModal from '../components/HowItWorksModal';
+import FuelPumpTest from '../components/FuelPumpTest';
 import IllusionTest from './IllusionTest';
 import { saveAttempt } from '../lib/supabaseClient';
 import { useSessionId, useClientInfo } from '../hooks/useAnimationLoop';
@@ -14,8 +15,9 @@ import { Link } from 'react-router-dom';
  */
 export default function Home() {
   const navigate = useNavigate();
-  const [currentTest, setCurrentTest] = useState('perception'); // perception | illusion | complete
+  const [currentTest, setCurrentTest] = useState('perception'); // perception | fuelPump | illusion | complete
   const [testResult, setTestResult] = useState(null);
+  const [fuelPumpResult, setFuelPumpResult] = useState(null);
   const [illusionResult, setIllusionResult] = useState(null);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -78,7 +80,35 @@ export default function Home() {
   };
 
   const handleContinueToIllusion = () => {
+    setCurrentTest('fuelPump');
+  };
+
+  const handleFuelPumpComplete = async (result) => {
+    setFuelPumpResult(result);
+    
+    // Save fuel pump result
+    setIsSaving(true);
+    await saveFuelPumpResult(result);
+    setIsSaving(false);
+    
     setCurrentTest('illusion');
+  };
+
+  const saveFuelPumpResult = async (result) => {
+    console.log('Fuel pump test result:', result);
+    
+    const fuelPumpData = {
+      session_id: sessionId,
+      test_type: 'fuel_pump_risk',
+      total_points: result.totalPoints,
+      trials: result.trials,
+      client_info: {
+        ...clientInfo,
+        demographics: userDemographics
+      }
+    };
+
+    console.log('Fuel pump data to save:', fuelPumpData);
   };
 
   const handleIllusionComplete = async (result) => {
@@ -176,13 +206,13 @@ export default function Home() {
               <>
                 <ResultCard result={testResult} onRetry={handleRetry} />
                 
-                {/* Continue to Illusion Test */}
+                {/* Continue to Fuel Pump Test */}
                 <div className="mt-8 text-center">
                   <button
                     onClick={handleContinueToIllusion}
                     className="px-8 py-4 bg-purple-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-purple-700 transition-all transform hover:scale-105"
                   >
-                    Continue to Next Test →
+                    Continue to Experiment 2 (Fuel Pump) →
                   </button>
                 </div>
               </>
@@ -240,7 +270,27 @@ export default function Home() {
         </>
       )}
 
-      {/* Illusion of Control Test */}
+      {/* Fuel Pump Risk Test (Experiment 2) */}
+      {currentTest === 'fuelPump' && (
+        <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100">
+          <header className="bg-white shadow">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <h1 className="text-3xl font-bold text-gray-900">
+                ⛽ Experiment 2: Fuel Pump Risk Task
+              </h1>
+              <p className="mt-1 text-sm text-gray-500">
+                Test your risk-taking behavior under uncertainty
+              </p>
+            </div>
+          </header>
+
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <FuelPumpTest onComplete={handleFuelPumpComplete} />
+          </main>
+        </div>
+      )}
+
+      {/* Illusion of Control Test (Experiment 3) */}
       {currentTest === 'illusion' && (
         <IllusionTest onComplete={handleIllusionComplete} />
       )}

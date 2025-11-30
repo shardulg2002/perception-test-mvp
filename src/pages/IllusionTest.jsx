@@ -44,7 +44,7 @@ export default function IllusionTest({ onComplete }) {
         <div className="max-w-3xl mx-auto px-4 py-12">
           <div className="bg-white rounded-xl shadow-2xl p-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">
-              🚗 Illusion of Control Task
+              🚗 Experiment 3: Illusion of Control Task
             </h1>
             
             <div className="bg-blue-50 border-l-4 border-blue-400 p-6 mb-6">
