@@ -18,6 +18,7 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
   
   const animationRef = useRef(null);
   const hazardPositionRef = useRef(CONFIG.HAZARD_START_X);
+  const userActionRef = useRef(null); // Track if action already taken
   const timingRef = useRef({
     startTime: null,
     actionTime: null
@@ -130,13 +131,15 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
       e.preventDefault();
       console.log('✅ Action registered:', action);
       
-      // Only record first action
-      if (userAction === null) {
+      // Only record first action - use ref for immediate check
+      if (userActionRef.current === null) {
+        userActionRef.current = action; // Set ref immediately
         setUserAction(action);
         timingRef.current.actionTime = performance.now();
         console.log('📝 First action recorded:', action, 'at', timingRef.current.actionTime);
       } else {
-        console.log('⚠️ Action already recorded, ignoring:', action);
+        console.log('⚠️ Action already recorded (' + userActionRef.current + '), ignoring:', action);
+        return; // Early return to prevent any further processing
       }
       
       setShowFeedback(true);
@@ -162,6 +165,7 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
     console.log('🚙 ILLUSION TEST - Starting animation');
     const startTime = performance.now();
     timingRef.current.startTime = startTime;
+    userActionRef.current = null; // Reset action ref for new scenario
     let localUserAction = null; // Track user action locally
 
     const animate = () => {

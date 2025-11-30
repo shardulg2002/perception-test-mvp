@@ -21,6 +21,11 @@ const CALCULATED_SPEED = (TOTAL_DISTANCE / TOTAL_DURATION) * 1000; // pixels per
 
 export default function TestCanvas({ onTestComplete, onTestStart }) {
   const [testState, setTestState] = useState('idle');
+  
+  // Sync testState to ref for event handlers
+  useEffect(() => {
+    testStateRef.current = testState;
+  }, [testState]);
   const [countdown, setCountdown] = useState(3);
   const [carPosition, setCarPosition] = useState(CONFIG.CAR_START_X);
   const [isCarVisible, setIsCarVisible] = useState(true);
@@ -28,6 +33,7 @@ export default function TestCanvas({ onTestComplete, onTestStart }) {
   
   const animationRef = useRef(null);
   const carPositionRef = useRef(CONFIG.CAR_START_X); // Track position in ref
+  const testStateRef = useRef('idle'); // Track test state in ref for event handlers
   const timingRef = useRef({
     startTime: null,
     hideTime: null,
@@ -124,7 +130,13 @@ export default function TestCanvas({ onTestComplete, onTestStart }) {
    * Handle stop button press
    */
   const handleStop = () => {
-    if (testState !== 'running' && testState !== 'hidden') return;
+    console.log('🛑 STOP pressed! Current state:', testStateRef.current);
+    if (testStateRef.current !== 'running' && testStateRef.current !== 'hidden') {
+      console.log('⚠️ Ignoring STOP - test not active');
+      return;
+    }
+    
+    console.log('✅ STOP accepted - stopping car');
 
     const currentTime = performance.now();
     const elapsed = currentTime - timingRef.current.startTime;
@@ -132,6 +144,7 @@ export default function TestCanvas({ onTestComplete, onTestStart }) {
     const position = CONFIG.CAR_START_X + distance;
     
     timingRef.current.stopTime = currentTime;
+    testStateRef.current = 'finished'; // Update ref immediately
     setTestState('finished');
     
     if (animationRef.current) {
