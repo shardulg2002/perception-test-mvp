@@ -4,8 +4,10 @@ import CarIcon from './CarIcon';
 
 // Test configuration constants
 const CONFIG = {
-  VISIBLE_DURATION: 5000, // 5 seconds car is visible
-  HIDDEN_DURATION: 3500, // 3.5 seconds hidden before collision (if not stopped)
+  MIN_VISIBLE_DURATION: 3000, // 3 seconds minimum
+  MAX_VISIBLE_DURATION: 7000, // 7 seconds maximum
+  MIN_HIDDEN_DURATION: 2000, // 2 seconds minimum
+  MAX_HIDDEN_DURATION: 5000, // 5 seconds maximum
   LANE_WIDTH: 800,
   LANE_HEIGHT: 150,
   CAR_START_X: 50,
@@ -15,10 +17,7 @@ const CONFIG = {
   TOTAL_TRIALS: 5
 };
 
-// Calculate speed so car reaches obstacle in total time
-const TOTAL_DURATION = CONFIG.VISIBLE_DURATION + CONFIG.HIDDEN_DURATION;
 const TOTAL_DISTANCE = CONFIG.OBSTACLE_X - CONFIG.CAR_START_X - CONFIG.CAR_WIDTH;
-const CALCULATED_SPEED = (TOTAL_DISTANCE / TOTAL_DURATION) * 1000; // pixels per second
 
 export default function TestCanvas({ onTestComplete, onTestStart, currentTrial = 1 }) {
   const [testState, setTestState] = useState('idle');
@@ -35,6 +34,9 @@ export default function TestCanvas({ onTestComplete, onTestStart, currentTrial =
   const animationRef = useRef(null);
   const carPositionRef = useRef(CONFIG.CAR_START_X); // Track position in ref
   const testStateRef = useRef('idle'); // Track test state in ref for event handlers
+  const visibleDurationRef = useRef(null); // Randomized visible duration
+  const hiddenDurationRef = useRef(null); // Randomized hidden duration
+  const calculatedSpeedRef = useRef(null); // Calculated speed for this trial
   const timingRef = useRef({
     startTime: null,
     hideTime: null,
@@ -44,6 +46,24 @@ export default function TestCanvas({ onTestComplete, onTestStart, currentTrial =
 
   // Debug render log
   console.log(`🔄 RENDER: state=${testState}, carPos=${carPosition.toFixed(1)}, visible=${isCarVisible}`);
+
+  // Generate random durations for this trial
+  useEffect(() => {
+    const visibleDuration = Math.floor(
+      Math.random() * (CONFIG.MAX_VISIBLE_DURATION - CONFIG.MIN_VISIBLE_DURATION + 1) + CONFIG.MIN_VISIBLE_DURATION
+    );
+    const hiddenDuration = Math.floor(
+      Math.random() * (CONFIG.MAX_HIDDEN_DURATION - CONFIG.MIN_HIDDEN_DURATION + 1) + CONFIG.MIN_HIDDEN_DURATION
+    );
+    const totalDuration = visibleDuration + hiddenDuration;
+    const speed = (TOTAL_DISTANCE / totalDuration) * 1000;
+    
+    visibleDurationRef.current = visibleDuration;
+    hiddenDurationRef.current = hiddenDuration;
+    calculatedSpeedRef.current = speed;
+    
+    console.log(`🎲 Trial ${currentTrial} - Visible: ${(visibleDuration/1000).toFixed(1)}s, Hidden: ${(hiddenDuration/1000).toFixed(1)}s, Speed: ${speed.toFixed(2)}px/s`);
+  }, [currentTrial]);
 
   /**
    * Start the actual test
@@ -70,7 +90,7 @@ export default function TestCanvas({ onTestComplete, onTestStart, currentTrial =
     const animateLoop = () => {
       const currentTime = performance.now();
       const elapsed = currentTime - startTime;
-      const distance = (CALCULATED_SPEED * elapsed) / 1000;
+      const distance = (calculatedSpeedRef.current * elapsed) / 1000;
       const newPosition = CONFIG.CAR_START_X + distance;
       
       console.log(`🎬 Frame: elapsed=${elapsed.toFixed(0)}ms, pos=${newPosition.toFixed(1)}px, state=${testState}`);
@@ -83,7 +103,7 @@ export default function TestCanvas({ onTestComplete, onTestStart, currentTrial =
       });
 
       // Check if car should be hidden
-      if (elapsed >= CONFIG.VISIBLE_DURATION && timingRef.current.hideTime === null) {
+      if (elapsed >= visibleDurationRef.current && timingRef.current.hideTime === null) {
         console.log('🙈 HIDING CAR at', elapsed.toFixed(0), 'ms');
         flushSync(() => {
           setIsCarVisible(false);
@@ -103,8 +123,9 @@ export default function TestCanvas({ onTestComplete, onTestStart, currentTrial =
         
         const result = {
           outcome: 'fail',
-          visibleDuration: CONFIG.VISIBLE_DURATION,
-          speed: CALCULATED_SPEED,
+          visibleDuration: visibleDurationRef.current,
+          hiddenDuration: hiddenDurationRef.current,
+          speed: calculatedSpeedRef.current,
           hideTime: timingRef.current.hideTime,
           stopTime: null,
           collisionTime: currentTime,
@@ -141,7 +162,7 @@ export default function TestCanvas({ onTestComplete, onTestStart, currentTrial =
 
     const currentTime = performance.now();
     const elapsed = currentTime - timingRef.current.startTime;
-    const distance = (CALCULATED_SPEED * elapsed) / 1000;
+    const distance = (calculatedSpeedRef.current * elapsed) / 1000;
     const position = CONFIG.CAR_START_X + distance;
     
     timingRef.current.stopTime = currentTime;
@@ -159,8 +180,9 @@ export default function TestCanvas({ onTestComplete, onTestStart, currentTrial =
 
     const result = {
       outcome: distanceToObstacle >= 0 ? 'success' : 'fail',
-      visibleDuration: CONFIG.VISIBLE_DURATION,
-      speed: CALCULATED_SPEED,
+      visibleDuration: visibleDurationRef.current,
+      hiddenDuration: hiddenDurationRef.current,
+      speed: calculatedSpeedRef.current,
       hideTime: timingRef.current.hideTime,
       stopTime: currentTime,
       collisionTime: null,
