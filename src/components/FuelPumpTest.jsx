@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
 const CONFIG = {
-  MIN_BLAST_TIME: 1000, // 1 second minimum
-  MAX_BLAST_TIME: 10000, // 10 seconds maximum
-  TOTAL_TRIALS: 3,
+  TRIAL_DURATION: 15000, // 15 seconds per trial
+  MIN_BLAST_PUMPS: 10, // Minimum pumps before blast
+  MAX_BLAST_PUMPS: 40, // Maximum pumps before blast
+  TOTAL_TRIALS: 5,
   POINTS_PER_PUMP: 1
 };
 
@@ -20,7 +21,7 @@ export default function FuelPumpTest({ onComplete }) {
   
   const trialStateRef = useRef('ready');
   const startTimeRef = useRef(null);
-  const blastTimeRef = useRef(null);
+  const blastPumpsRef = useRef(null); // Random number of pumps before blast
   const animationRef = useRef(null);
   const pumpCountRef = useRef(0);
   const firstPumpRef = useRef(false);
@@ -32,15 +33,15 @@ export default function FuelPumpTest({ onComplete }) {
     trialStateRef.current = trialState;
   }, [trialState]);
 
-  // Generate random blast time for new trial
+  // Generate random blast pumps for new trial
   const startNewTrial = () => {
-    const randomBlastTime = Math.floor(
-      Math.random() * (CONFIG.MAX_BLAST_TIME - CONFIG.MIN_BLAST_TIME + 1) + CONFIG.MIN_BLAST_TIME
+    const randomBlastPumps = Math.floor(
+      Math.random() * (CONFIG.MAX_BLAST_PUMPS - CONFIG.MIN_BLAST_PUMPS + 1) + CONFIG.MIN_BLAST_PUMPS
     );
     
-    console.log(`🎮 Trial ${currentTrial} - Blast time: ${randomBlastTime}ms (${(randomBlastTime/1000).toFixed(1)}s)`);
+    console.log(`🎮 Trial ${currentTrial} - Blast at ${randomBlastPumps} pumps (or 15 seconds)`);
     
-    blastTimeRef.current = randomBlastTime;
+    blastPumpsRef.current = randomBlastPumps;
     startTimeRef.current = null;
     firstPumpRef.current = false;
     pumpCountRef.current = 0;
@@ -87,26 +88,32 @@ export default function FuelPumpTest({ onComplete }) {
       setTrialPoints(newPoints);
     });
     
-    console.log(`💰 Pumps: ${newPumpCount} | Trial Points: ${newPoints}`);
+    console.log(`💰 Pumps: ${newPumpCount}/${blastPumpsRef.current} | Trial Points: ${newPoints}`);
+    
+    // Check if reached blast pump count
+    if (newPumpCount >= blastPumpsRef.current) {
+      console.log('💥 EXPLOSION! Reached blast pump count:', blastPumpsRef.current);
+      handleExplosion();
+    }
   };
 
-  // Animation loop to check for explosion
+  // Animation loop to check for 15-second timeout
   const startAnimation = () => {
     const animate = () => {
-      if (!startTimeRef.current || !blastTimeRef.current) return;
+      if (!startTimeRef.current) return;
       
       const currentTime = performance.now();
       const elapsed = currentTime - startTimeRef.current;
-      const progress = (elapsed / blastTimeRef.current) * 100;
+      const progress = (elapsed / CONFIG.TRIAL_DURATION) * 100;
       
       flushSync(() => {
         setElapsedTime(elapsed);
         setFuelLevel(Math.min(progress, 100));
       });
 
-      // Check for explosion
-      if (elapsed >= blastTimeRef.current) {
-        console.log('💥 EXPLOSION! Time exceeded');
+      // Check for 15-second timeout
+      if (elapsed >= CONFIG.TRIAL_DURATION) {
+        console.log('💥 EXPLOSION! 15-second timeout reached');
         handleExplosion();
         return;
       }
@@ -145,7 +152,7 @@ export default function FuelPumpTest({ onComplete }) {
       pumps: pumpCount,
       points: trialPoints,
       timeElapsed: elapsedTime,
-      blastTime: blastTimeRef.current
+      blastPumps: blastPumpsRef.current
     });
 
     console.log(`📊 Trial ${currentTrial} complete - Points: ${trialPoints} | Total: ${newTotal}`);
@@ -172,7 +179,7 @@ export default function FuelPumpTest({ onComplete }) {
       pumps: pumpCount,
       points: 0, // Lost all points
       timeElapsed: elapsedTime,
-      blastTime: blastTimeRef.current
+      blastPumps: blastPumpsRef.current
     });
 
     console.log(`📊 Trial ${currentTrial} exploded - Points lost: ${trialPoints}`);
@@ -371,10 +378,11 @@ export default function FuelPumpTest({ onComplete }) {
         <h3 className="font-bold text-blue-900 mb-2">How to Play:</h3>
         <ul className="text-sm text-blue-800 space-y-1">
           <li>• Press <kbd className="px-2 py-1 bg-white rounded border">SPACEBAR</kbd> to pump fuel (+1 point per pump)</li>
-          <li>• The car will explode after a random time (1-10 seconds)</li>
+          <li>• The car will explode after a <strong>random number of pumps (10-40)</strong> OR after <strong>15 seconds</strong></li>
           <li>• Click <strong>STOP</strong> before explosion to secure your points</li>
           <li>• If the car explodes, you lose all points for that trial</li>
           <li>• Successfully secured points carry forward to the next trial</li>
+          <li>• Complete {CONFIG.TOTAL_TRIALS} trials to finish the test</li>
         </ul>
       </div>
     </div>
