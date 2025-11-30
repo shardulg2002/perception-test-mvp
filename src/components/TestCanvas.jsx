@@ -11,7 +11,8 @@ const CONFIG = {
   CAR_START_X: 50,
   OBSTACLE_X: 700,
   CAR_WIDTH: 60,
-  CAR_HEIGHT: 30
+  CAR_HEIGHT: 30,
+  TOTAL_TRIALS: 5
 };
 
 // Calculate speed so car reaches obstacle in total time
@@ -19,7 +20,7 @@ const TOTAL_DURATION = CONFIG.VISIBLE_DURATION + CONFIG.HIDDEN_DURATION;
 const TOTAL_DISTANCE = CONFIG.OBSTACLE_X - CONFIG.CAR_START_X - CONFIG.CAR_WIDTH;
 const CALCULATED_SPEED = (TOTAL_DISTANCE / TOTAL_DURATION) * 1000; // pixels per second
 
-export default function TestCanvas({ onTestComplete, onTestStart }) {
+export default function TestCanvas({ onTestComplete, onTestStart, currentTrial = 1 }) {
   const [testState, setTestState] = useState('idle');
   
   // Sync testState to ref for event handlers
@@ -296,6 +297,15 @@ export default function TestCanvas({ onTestComplete, onTestStart }) {
             </text>
           )}
         </svg>
+      </div>
+
+      {/* Trial Counter */}
+      <div className="mt-4 text-center">
+        <div className="inline-block bg-blue-100 px-6 py-2 rounded-lg">
+          <span className="text-sm font-semibold text-blue-800">
+            Trial {currentTrial} of {CONFIG.TOTAL_TRIALS}
+          </span>
+        </div>
       </div>
 
       {/* Controls */}

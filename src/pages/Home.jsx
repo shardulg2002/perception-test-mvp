@@ -16,12 +16,16 @@ import { Link } from 'react-router-dom';
 export default function Home() {
   const navigate = useNavigate();
   const [currentTest, setCurrentTest] = useState('perception'); // perception | fuelPump | illusion | complete
+  const [currentPerceptionTrial, setCurrentPerceptionTrial] = useState(1);
+  const [perceptionTrialResults, setPerceptionTrialResults] = useState([]);
   const [testResult, setTestResult] = useState(null);
   const [fuelPumpResult, setFuelPumpResult] = useState(null);
   const [illusionResult, setIllusionResult] = useState(null);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [userDemographics, setUserDemographics] = useState(null);
+  
+  const TOTAL_PERCEPTION_TRIALS = 5;
   
   const sessionId = useSessionId();
   const clientInfo = useClientInfo();
@@ -38,11 +42,17 @@ export default function Home() {
   }, [navigate]);
 
   const handleTestComplete = async (result) => {
-    setTestResult(result);
+    // Add trial number to result
+    const trialResult = { ...result, trial: currentPerceptionTrial };
+    
+    // Store trial result
+    const updatedResults = [...perceptionTrialResults, trialResult];
+    setPerceptionTrialResults(updatedResults);
+    setTestResult(trialResult);
     
     // Auto-save result
     setIsSaving(true);
-    await saveResult(result);
+    await saveResult(trialResult);
     setIsSaving(false);
   };
 
@@ -72,7 +82,11 @@ export default function Home() {
   };
 
   const handleRetry = () => {
-    setTestResult(null);
+    if (currentPerceptionTrial < TOTAL_PERCEPTION_TRIALS) {
+      // Move to next trial
+      setCurrentPerceptionTrial(currentPerceptionTrial + 1);
+      setTestResult(null);
+    }
   };
 
   const handleTestStart = () => {
@@ -194,6 +208,7 @@ export default function Home() {
                 <TestCanvas
                   onTestComplete={handleTestComplete}
                   onTestStart={handleTestStart}
+                  currentTrial={currentPerceptionTrial}
                 />
                 
                 {isSaving && (
@@ -206,14 +221,33 @@ export default function Home() {
               <>
                 <ResultCard result={testResult} onRetry={handleRetry} />
                 
-                {/* Continue to Fuel Pump Test */}
+                {/* Trial Progress and Continue */}
                 <div className="mt-8 text-center">
-                  <button
-                    onClick={handleContinueToIllusion}
-                    className="px-8 py-4 bg-purple-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-purple-700 transition-all transform hover:scale-105"
-                  >
-                    Continue to Experiment 2 (Fuel Pump) →
-                  </button>
+                  {currentPerceptionTrial < TOTAL_PERCEPTION_TRIALS ? (
+                    <button
+                      onClick={handleRetry}
+                      className="px-8 py-4 bg-blue-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-blue-700 transition-all transform hover:scale-105"
+                    >
+                      Next Trial ({currentPerceptionTrial + 1}/{TOTAL_PERCEPTION_TRIALS}) →
+                    </button>
+                  ) : (
+                    <>
+                      <div className="mb-4 p-4 bg-green-100 border border-green-400 rounded-lg">
+                        <p className="text-lg font-bold text-green-800">
+                          ✅ All {TOTAL_PERCEPTION_TRIALS} trials completed!
+                        </p>
+                        <p className="text-sm text-green-700 mt-2">
+                          Successful stops: {perceptionTrialResults.filter(r => r.outcome === 'success').length}/{TOTAL_PERCEPTION_TRIALS}
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleContinueToIllusion}
+                        className="px-8 py-4 bg-purple-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-purple-700 transition-all transform hover:scale-105"
+                      >
+                        Continue to Experiment 2 (Fuel Pump) →
+                      </button>
+                    </>
+                  )}
                 </div>
               </>
             )}
