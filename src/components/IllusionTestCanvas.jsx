@@ -185,6 +185,195 @@ export default function IllusionTestCanvas({ mode, scenarioId = 1, onComplete })
     return 250 + (lane * 60); // Center is lane 1
   };
 
+  // Render scenario-specific visuals
+  const renderScenarioVisuals = () => {
+    switch(scenarioId) {
+      case 1: // Highway Merge
+        return (
+          <>
+            {/* Sky */}
+            <rect x="0" y="0" width={CONFIG.LANE_WIDTH} height="200" fill="#87CEEB" />
+            
+            {/* Highway Road - perspective view */}
+            <path
+              d={`M 300 200 L 0 ${CONFIG.LANE_HEIGHT} L ${CONFIG.LANE_WIDTH} ${CONFIG.LANE_HEIGHT} L 500 200 Z`}
+              fill="#374151"
+            />
+
+            {/* Lane markings - multiple lanes */}
+            <line x1="250" y1="200" x2="100" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
+            <line x1="350" y1="200" x2="250" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
+            <line x1="450" y1="200" x2="550" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
+            <line x1="550" y1="200" x2="700" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
+
+            {/* Merging car from on-ramp */}
+            {hazardPosition > 300 && (
+              <g transform={`translate(${hazardPosition}, 180)`}>
+                <rect x="-30" y="0" width="60" height="40" fill="#DC2626" rx="5" />
+                <rect x="-25" y="5" width="20" height="15" fill="#FEE2E2" />
+                <rect x="5" y="5" width="20" height="15" fill="#FEE2E2" />
+                <circle cx="-20" cy="40" r="5" fill="#1F2937" />
+                <circle cx="20" cy="40" r="5" fill="#1F2937" />
+              </g>
+            )}
+          </>
+        );
+
+      case 2: // Residential Curve with Ball
+        return (
+          <>
+            {/* Sky */}
+            <rect x="0" y="0" width={CONFIG.LANE_WIDTH} height="200" fill="#B0D4F1" />
+            
+            {/* Residential area background - houses */}
+            <rect x="50" y="120" width="80" height="70" fill="#D97706" />
+            <path d="M 50 120 L 90 90 L 130 120 Z" fill="#991B1B" />
+            <rect x="650" y="120" width="80" height="70" fill="#16A34A" />
+            <path d="M 650 120 L 690 90 L 730 120 Z" fill="#991B1B" />
+            
+            {/* Curved residential road */}
+            <path
+              d={`M 200 200 Q 300 250 400 ${CONFIG.LANE_HEIGHT} L ${CONFIG.LANE_WIDTH} ${CONFIG.LANE_HEIGHT} L 600 200 Z`}
+              fill="#4B5563"
+            />
+
+            {/* Single lane marking (narrow street) */}
+            <line x1="400" y1="200" x2="${CONFIG.LANE_WIDTH/2}" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="2" strokeDasharray="15,10" />
+
+            {/* Child's ball rolling into street */}
+            {hazardPosition > 300 && (
+              <g transform={`translate(${hazardPosition - 100}, ${220 + (700 - hazardPosition) * 0.3})`}>
+                <circle cx="0" cy="0" r="15" fill="#EF4444" />
+                <circle cx="-5" cy="-5" r="4" fill="#FFFFFF" />
+                <circle cx="5" cy="5" r="4" fill="#FFFFFF" />
+              </g>
+            )}
+          </>
+        );
+
+      case 3: // Rainy Pothole
+        return (
+          <>
+            {/* Dark rainy sky */}
+            <rect x="0" y="0" width={CONFIG.LANE_WIDTH} height="200" fill="#64748B" />
+            
+            {/* Rain effect */}
+            {[...Array(20)].map((_, i) => (
+              <line 
+                key={i}
+                x1={40 * i} 
+                y1={(hazardPosition * 0.3 + i * 20) % 200} 
+                x2={40 * i + 5} 
+                y2={(hazardPosition * 0.3 + i * 20 + 15) % 200} 
+                stroke="#94A3B8" 
+                strokeWidth="1.5" 
+                opacity="0.6"
+              />
+            ))}
+
+            {/* Overpass road */}
+            <path
+              d={`M 300 200 L 0 ${CONFIG.LANE_HEIGHT} L ${CONFIG.LANE_WIDTH} ${CONFIG.LANE_HEIGHT} L 500 200 Z`}
+              fill="#1F2937"
+            />
+
+            {/* Lane markings */}
+            <line x1="400" y1="200" x2="400" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" opacity="0.7" />
+
+            {/* Water puddle obscuring pothole */}
+            {hazardPosition > 300 && (
+              <g transform={`translate(${hazardPosition - 50}, 280)`}>
+                <ellipse cx="0" cy="0" rx="60" ry="30" fill="#3B82F6" opacity="0.6" />
+                {/* Hidden pothole underneath */}
+                <ellipse cx="0" cy="0" rx="35" ry="18" fill="#000000" opacity="0.9" />
+              </g>
+            )}
+          </>
+        );
+
+      case 4: // Red Light
+        return (
+          <>
+            {/* Sky */}
+            <rect x="0" y="0" width={CONFIG.LANE_WIDTH} height="200" fill="#93C5FD" />
+            
+            {/* City buildings */}
+            <rect x="100" y="80" width="60" height="120" fill="#6B7280" />
+            <rect x="600" y="100" width="80" height="100" fill="#6B7280" />
+            
+            {/* Road approaching intersection */}
+            <path
+              d={`M 300 200 L 0 ${CONFIG.LANE_HEIGHT} L ${CONFIG.LANE_WIDTH} ${CONFIG.LANE_HEIGHT} L 500 200 Z`}
+              fill="#374151"
+            />
+
+            {/* Center lane marking */}
+            <line x1="400" y1="200" x2="400" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
+
+            {/* Traffic light at intersection */}
+            {hazardPosition > 300 && (
+              <g transform={`translate(${hazardPosition + 50}, 140)`}>
+                {/* Traffic light pole */}
+                <rect x="-3" y="0" width="6" height="80" fill="#1F2937" />
+                {/* Traffic light box */}
+                <rect x="-15" y="-40" width="30" height="40" fill="#000000" rx="3" />
+                {/* Red light ON */}
+                <circle cx="0" cy="-30" r="8" fill="#EF4444" opacity="1" />
+                {/* Yellow light OFF */}
+                <circle cx="0" cy="-20" r="8" fill="#4B5563" opacity="0.3" />
+                {/* Green light OFF */}
+                <circle cx="0" cy="-10" r="8" fill="#4B5563" opacity="0.3" />
+              </g>
+            )}
+          </>
+        );
+
+      case 5: // Late Lane Merge
+        return (
+          <>
+            {/* Sky */}
+            <rect x="0" y="0" width={CONFIG.LANE_WIDTH} height="200" fill="#87CEEB" />
+            
+            {/* Construction zone background */}
+            <rect x="600" y="120" width="150" height="80" fill="#F59E0B" opacity="0.3" />
+            
+            {/* Highway with merging lanes */}
+            <path
+              d={`M 300 200 L 0 ${CONFIG.LANE_HEIGHT} L ${CONFIG.LANE_WIDTH} ${CONFIG.LANE_HEIGHT} L 500 200 Z`}
+              fill="#374151"
+            />
+
+            {/* Lane markings - merging pattern */}
+            <line x1="250" y1="200" x2="100" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
+            <line x1="450" y1="200" x2="550" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
+            
+            {/* Construction cones */}
+            <g transform="translate(600, 200)">
+              <polygon points="0,0 -8,20 8,20" fill="#F59E0B" />
+              <rect x="-2" y="20" width="4" height="10" fill="#F59E0B" opacity="0.7" />
+            </g>
+            <g transform="translate(620, 220)">
+              <polygon points="0,0 -8,20 8,20" fill="#F59E0B" />
+              <rect x="-2" y="20" width="4" height="10" fill="#F59E0B" opacity="0.7" />
+            </g>
+
+            {/* Other car in adjacent lane (heavy traffic) */}
+            {hazardPosition > 300 && (
+              <g transform={`translate(${hazardPosition - 80}, 200)`}>
+                <rect x="-25" y="0" width="50" height="35" fill="#6B7280" rx="4" />
+                <rect x="-20" y="5" width="15" height="12" fill="#E5E7EB" />
+                <circle cx="-15" cy="35" r="4" fill="#1F2937" />
+                <circle cx="15" cy="35" r="4" fill="#1F2937" />
+              </g>
+            )}
+          </>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto">
       {/* SVG Canvas */}
@@ -193,34 +382,8 @@ export default function IllusionTestCanvas({ mode, scenarioId = 1, onComplete })
           viewBox={`0 0 ${CONFIG.LANE_WIDTH} ${CONFIG.LANE_HEIGHT}`}
           className="w-full h-auto"
         >
-          {/* Sky */}
-          <rect x="0" y="0" width={CONFIG.LANE_WIDTH} height="200" fill="#87CEEB" />
-          
-          {/* Road - perspective view */}
-          <path
-            d={`M 300 200 L 0 ${CONFIG.LANE_HEIGHT} L ${CONFIG.LANE_WIDTH} ${CONFIG.LANE_HEIGHT} L 500 200 Z`}
-            fill="#374151"
-          />
-
-          {/* Lane markings - left */}
-          <line x1="250" y1="200" x2="100" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
-          {/* Lane markings - center left */}
-          <line x1="350" y1="200" x2="250" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
-          {/* Lane markings - center right */}
-          <line x1="450" y1="200" x2="550" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
-          {/* Lane markings - right */}
-          <line x1="550" y1="200" x2="700" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
-
-          {/* Hazard car (merging from right side) */}
-          {hazardPosition > 300 && (
-            <g transform={`translate(${hazardPosition}, 180)`}>
-              <rect x="-30" y="0" width="60" height="40" fill="#DC2626" rx="5" />
-              <rect x="-25" y="5" width="20" height="15" fill="#FEE2E2" />
-              <rect x="5" y="5" width="20" height="15" fill="#FEE2E2" />
-              <circle cx="-20" cy="40" r="5" fill="#1F2937" />
-              <circle cx="20" cy="40" r="5" fill="#1F2937" />
-            </g>
-          )}
+          {/* Render scenario-specific background and hazards */}
+          {renderScenarioVisuals()}
 
           {/* Player car (bottom - driver's perspective) */}
           <g transform={`translate(${380 + (playerLane - 1) * 100}, ${getLaneY(1)})`}>
