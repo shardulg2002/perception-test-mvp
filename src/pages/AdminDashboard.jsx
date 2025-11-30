@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchAllSessions } from '../lib/supabaseClient';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -8,6 +9,8 @@ export default function AdminDashboard() {
   const [filterExperiment, setFilterExperiment] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [aggregateStats, setAggregateStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [dataSource, setDataSource] = useState('supabase'); // 'supabase' or 'localStorage'
 
   useEffect(() => {
     // Check admin authentication
@@ -20,21 +23,51 @@ export default function AdminDashboard() {
     loadAllSessions();
   }, [navigate]);
 
-  const loadAllSessions = () => {
-    const sessions = [];
+  const loadAllSessions = async () => {
+    setLoading(true);
+    let sessions = [];
     
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
+    // Try to fetch from Supabase first
+    const { data: supabaseData, error } = await fetchAllSessions(1000);
+    
+    if (!error && supabaseData && supabaseData.length > 0) {
+      // Format Supabase data to match localStorage structure
+      sessions = supabaseData.map(session => ({
+        id: session.session_id,
+        sessionId: session.session_id,
+        timestamp: session.timestamp,
+        demographics: {
+          name: session.candidate_name,
+          applicationNumber: session.application_number,
+          age: session.age,
+          gender: session.gender,
+          drivingExperience: session.driving_experience
+        },
+        perceptionResults: session.perception_results,
+        fuelPumpResult: session.fuel_pump_result,
+        illusionResult: session.illusion_result,
+        clientInfo: session.client_info
+      }));
+      setDataSource('supabase');
+      console.log('Loaded sessions from Supabase:', sessions.length);
+    } else {
+      // Fallback to localStorage
+      console.log('Supabase not available, using localStorage');
+      setDataSource('localStorage');
       
-      if (key.startsWith('session_')) {
-        try {
-          const sessionData = JSON.parse(localStorage.getItem(key));
-          sessions.push({
-            id: key.replace('session_', ''),
-            ...sessionData
-          });
-        } catch (error) {
-          console.error('Error parsing session:', error);
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        
+        if (key.startsWith('session_')) {
+          try {
+            const sessionData = JSON.parse(localStorage.getItem(key));
+            sessions.push({
+              id: key.replace('session_', ''),
+              ...sessionData
+            });
+          } catch (error) {
+            console.error('Error parsing session:', error);
+          }
         }
       }
     }
@@ -48,6 +81,8 @@ export default function AdminDashboard() {
     if (sessions.length > 0 && !selectedSession) {
       setSelectedSession(sessions[0]);
     }
+    
+    setLoading(false);
   };
 
   const calculateAggregateStats = (sessions) => {
@@ -251,9 +286,16 @@ export default function AdminDashboard() {
               <h1 className="text-2xl font-bold">🔐 Admin Dashboard</h1>
               <p className="text-sm text-gray-400 mt-1">
                 Comprehensive Analytics & Data Management
+                {dataSource === 'supabase' ? ' (Supabase)' : ' (LocalStorage)'}
               </p>
             </div>
             <div className="flex gap-3">
+              <button
+                onClick={loadAllSessions}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+              >
+                🔄 Refresh
+              </button>
               <button
                 onClick={exportCSV}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
@@ -277,7 +319,15 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {loading ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading sessions...</p>
+          </div>
+        </div>
+      ) : (
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Aggregate Statistics */}
         {aggregateStats && (
           <div className="mb-8">

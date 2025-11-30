@@ -38,6 +38,70 @@ export async function saveAttempt(attemptData) {
 }
 
 /**
+ * Save complete session data (all 3 experiments)
+ * @param {Object} sessionData - Complete session data
+ * @returns {Promise<Object>} - The saved session or error
+ */
+export async function saveCompleteSession(sessionData) {
+  if (!supabase) {
+    console.warn('Supabase not configured. Session not saved:', sessionData);
+    return { error: 'Supabase not configured', data: null };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('test_sessions')
+      .insert([{
+        session_id: sessionData.sessionId,
+        timestamp: sessionData.timestamp,
+        candidate_name: sessionData.demographics?.name,
+        application_number: sessionData.demographics?.applicationNumber,
+        age: sessionData.demographics?.age,
+        gender: sessionData.demographics?.gender,
+        driving_experience: sessionData.demographics?.drivingExperience,
+        perception_results: sessionData.perceptionResults,
+        fuel_pump_result: sessionData.fuelPumpResult,
+        illusion_result: sessionData.illusionResult,
+        client_info: sessionData.clientInfo
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error saving complete session:', error);
+    return { data: null, error };
+  }
+}
+
+/**
+ * Fetch all complete sessions
+ * @param {number} limit - Maximum number of sessions to fetch
+ * @returns {Promise<Array>} - Array of sessions
+ */
+export async function fetchAllSessions(limit = 100) {
+  if (!supabase) {
+    console.warn('Supabase not configured. Cannot fetch sessions.');
+    return { data: [], error: 'Supabase not configured' };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('test_sessions')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error fetching sessions:', error);
+    return { data: [], error };
+  }
+}
+
+/**
  * Fetch all perception test attempts
  * @param {number} limit - Maximum number of attempts to fetch
  * @returns {Promise<Array>} - Array of attempts

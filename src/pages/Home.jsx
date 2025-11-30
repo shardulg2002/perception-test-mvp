@@ -5,7 +5,7 @@ import ResultCard from '../components/ResultCard';
 import HowItWorksModal from '../components/HowItWorksModal';
 import FuelPumpTest from '../components/FuelPumpTest';
 import IllusionTest from './IllusionTest';
-import { saveAttempt } from '../lib/supabaseClient';
+import { saveAttempt, saveCompleteSession } from '../lib/supabaseClient';
 import { useSessionId, useClientInfo } from '../hooks/useAnimationLoop';
 import { Link } from 'react-router-dom';
 
@@ -132,8 +132,8 @@ export default function Home() {
     setIsSaving(true);
     await saveIllusionResult(result);
     
-    // Save complete session data to localStorage
-    saveCompleteSessionData(result);
+    // Save complete session data to localStorage and Supabase
+    await saveCompleteSessionData(result);
     setIsSaving(false);
     
     setCurrentTest('complete');
@@ -159,7 +159,7 @@ export default function Home() {
     // const { error } = await saveAttempt(illusionData);
   };
 
-  const saveCompleteSessionData = (illusionResult) => {
+  const saveCompleteSessionData = async (illusionResult) => {
     const completeData = {
       sessionId: sessionId,
       timestamp: new Date().toISOString(),
@@ -176,6 +176,14 @@ export default function Home() {
     
     // Also save to sessionStorage for quick access
     sessionStorage.setItem('sessionId', sessionId);
+    
+    // Save to Supabase
+    const { error } = await saveCompleteSession(completeData);
+    if (error) {
+      console.error('Error saving to Supabase:', error);
+    } else {
+      console.log('Session successfully saved to Supabase');
+    }
     
     console.log('Complete session data saved:', completeData);
   };
