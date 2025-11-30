@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 
 const CONFIG = {
   SCENARIO_DURATION: 2000, // 2 seconds to react
@@ -16,6 +17,7 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
   const [showFeedback, setShowFeedback] = useState(false);
   
   const animationRef = useRef(null);
+  const hazardPositionRef = useRef(CONFIG.HAZARD_START_X);
   const timingRef = useRef({
     startTime: null,
     actionTime: null
@@ -24,7 +26,7 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
   /**
    * Calculate outcome based on mode and action
    */
-  const calculateOutcome = useCallback((action, mode) => {
+  const calculateOutcome = (action, mode) => {
     if (mode === 'assist' && action === null) {
       // No intervention - system handles it
       return {
@@ -96,12 +98,12 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
     };
 
     return outcomes[action][mode];
-  }, []);
+  };
 
   /**
    * Handle keyboard input
    */
-  const handleKeyPress = useCallback((e) => {
+  const handleKeyPress = (e) => {
     if (scenarioState !== 'playing') return;
 
     let action = null;
@@ -132,7 +134,7 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
         setPlayerLane(prev => prev + 1);
       }
     }
-  }, [scenarioState]);
+  };
 
   /**
    * Animation loop
@@ -153,12 +155,20 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
       const distance = (CONFIG.HAZARD_SPEED * elapsed) / 1000;
       const newPosition = CONFIG.HAZARD_START_X - distance;
       console.log(`🎬 Hazard: elapsed=${elapsed.toFixed(0)}ms, pos=${newPosition.toFixed(1)}px`);
-      setHazardPosition(newPosition);
+      
+      // Update ref immediately
+      hazardPositionRef.current = newPosition;
+      // Force synchronous update for immediate rendering
+      flushSync(() => {
+        setHazardPosition(newPosition);
+      });
 
       // Check if time is up
       if (elapsed >= CONFIG.SCENARIO_DURATION) {
         console.log('⏱️ ILLUSION TEST - Time up, scenario finished');
-        setScenarioState('finished');
+        flushSync(() => {
+          setScenarioState('finished');
+        });
         
         // Read latest userAction from state at the end
         setUserAction(prevAction => {
@@ -200,7 +210,7 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [handleKeyPress]);
+  }, []);
 
   const getLaneY = (lane) => {
     return 250 + (lane * 60); // Center is lane 1
