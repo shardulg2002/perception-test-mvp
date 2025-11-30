@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import CarIcon from './CarIcon';
 
 // Test configuration constants
@@ -26,6 +27,7 @@ export default function TestCanvas({ onTestComplete, onTestStart }) {
   const [showCollision, setShowCollision] = useState(false);
   
   const animationRef = useRef(null);
+  const carPositionRef = useRef(CONFIG.CAR_START_X); // Track position in ref
   const timingRef = useRef({
     startTime: null,
     hideTime: null,
@@ -43,6 +45,7 @@ export default function TestCanvas({ onTestComplete, onTestStart }) {
     console.log('🚗 START TEST - Setting state to running');
     setTestState('running');
     setCarPosition(CONFIG.CAR_START_X);
+    carPositionRef.current = CONFIG.CAR_START_X;
     setIsCarVisible(true);
     setShowCollision(false);
     
@@ -63,23 +66,33 @@ export default function TestCanvas({ onTestComplete, onTestStart }) {
       const distance = (CALCULATED_SPEED * elapsed) / 1000;
       const newPosition = CONFIG.CAR_START_X + distance;
       
-      console.log(`🎬 Frame: elapsed=${elapsed.toFixed(0)}ms, pos=${newPosition.toFixed(1)}px`);
-      setCarPosition(newPosition);
+      console.log(`🎬 Frame: elapsed=${elapsed.toFixed(0)}ms, pos=${newPosition.toFixed(1)}px, state=${testState}`);
+      
+      // Update ref immediately
+      carPositionRef.current = newPosition;
+      // Force synchronous update for immediate rendering
+      flushSync(() => {
+        setCarPosition(newPosition);
+      });
 
       // Check if car should be hidden
       if (elapsed >= CONFIG.VISIBLE_DURATION && timingRef.current.hideTime === null) {
         console.log('🙈 HIDING CAR at', elapsed.toFixed(0), 'ms');
-        setIsCarVisible(false);
+        flushSync(() => {
+          setIsCarVisible(false);
+          setTestState('hidden');
+        });
         timingRef.current.hideTime = currentTime;
-        setTestState('hidden');
       }
 
       // Check for collision
       if (newPosition + CONFIG.CAR_WIDTH >= CONFIG.OBSTACLE_X) {
         console.log('💥 COLLISION DETECTED');
         timingRef.current.collisionTime = currentTime;
-        setShowCollision(true);
-        setTestState('finished');
+        flushSync(() => {
+          setShowCollision(true);
+          setTestState('finished');
+        });
         
         const result = {
           outcome: 'fail',
@@ -96,9 +109,10 @@ export default function TestCanvas({ onTestComplete, onTestStart }) {
         setTimeout(() => {
           if (onTestComplete) onTestComplete(result);
         }, 500);
-        return;
+        return; // Stop animation
       }
 
+      // Continue animation
       animationRef.current = requestAnimationFrame(animateLoop);
     };
     
@@ -109,7 +123,7 @@ export default function TestCanvas({ onTestComplete, onTestStart }) {
   /**
    * Handle stop button press
    */
-  const handleStop = useCallback(() => {
+  const handleStop = () => {
     if (testState !== 'running' && testState !== 'hidden') return;
 
     const currentTime = performance.now();
@@ -141,8 +155,8 @@ export default function TestCanvas({ onTestComplete, onTestStart }) {
       reactionLatency: reactionLatency
     };
 
-    onTestComplete(result);
-  }, [testState, onTestComplete]);
+    if (onTestComplete) onTestComplete(result);
+  };
 
   /**
    * Start countdown before test
@@ -171,7 +185,7 @@ export default function TestCanvas({ onTestComplete, onTestStart }) {
    */
   useEffect(() => {
     const handleKeyPress = (e) => {
-      if (e.code === 'Space' && (testState === 'running' || testState === 'hidden')) {
+      if (e.code === 'Space') {
         e.preventDefault();
         handleStop();
       }
@@ -179,7 +193,7 @@ export default function TestCanvas({ onTestComplete, onTestStart }) {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [testState, handleStop]);
+  }, []);
 
   /**
    * Cleanup animation on unmount
