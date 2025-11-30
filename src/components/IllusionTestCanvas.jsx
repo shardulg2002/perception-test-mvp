@@ -104,7 +104,12 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
    * Handle keyboard input
    */
   const handleKeyPress = (e) => {
-    if (scenarioState !== 'playing') return;
+    console.log('🎮 Key pressed:', e.key, '| Current state:', scenarioState, '| Current action:', userAction);
+    
+    if (scenarioState !== 'playing') {
+      console.log('⚠️ Ignoring key - scenario not playing');
+      return;
+    }
 
     let action = null;
 
@@ -114,17 +119,27 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
     if (e.key === 'ArrowUp') action = 'accelerate';
     if (e.key === 'ArrowDown') action = 'brake';
 
-    // WASD keys
-    if (e.key.toLowerCase() === 'a') action = 'left';
-    if (e.key.toLowerCase() === 'd') action = 'right';
-    if (e.key.toLowerCase() === 'w') action = 'accelerate';
-    if (e.key.toLowerCase() === 's') action = 'brake';
+    // WASD keys (case-insensitive)
+    const keyLower = e.key.toLowerCase();
+    if (keyLower === 'a') action = 'left';
+    if (keyLower === 'd') action = 'right';
+    if (keyLower === 'w') action = 'accelerate';
+    if (keyLower === 's') action = 'brake';
 
     if (action) {
       e.preventDefault();
-      setUserAction(action);
+      console.log('✅ Action registered:', action);
+      
+      // Only record first action
+      if (userAction === null) {
+        setUserAction(action);
+        timingRef.current.actionTime = performance.now();
+        console.log('📝 First action recorded:', action, 'at', timingRef.current.actionTime);
+      } else {
+        console.log('⚠️ Action already recorded, ignoring:', action);
+      }
+      
       setShowFeedback(true);
-      timingRef.current.actionTime = performance.now();
 
       // Visual feedback for steering
       if (action === 'left' && playerLane > 0) {
@@ -133,6 +148,8 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
       if (action === 'right' && playerLane < 2) {
         setPlayerLane(prev => prev + 1);
       }
+    } else {
+      console.log('❌ Unknown key, no action');
     }
   };
 
@@ -272,6 +289,16 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
                 <circle cx="30" cy="115" r="6" fill="#EF4444" opacity="0.9" />
               </>
             )}
+            
+            {/* Headlights (show if accelerating) */}
+            {showFeedback && userAction === 'accelerate' && (
+              <>
+                <circle cx="-25" cy="5" r="4" fill="#FEF08A" opacity="0.95" />
+                <circle cx="25" cy="5" r="4" fill="#FEF08A" opacity="0.95" />
+                <ellipse cx="-25" cy="-10" rx="8" ry="15" fill="#FEF08A" opacity="0.4" />
+                <ellipse cx="25" cy="-10" rx="8" ry="15" fill="#FEF08A" opacity="0.4" />
+              </>
+            )}
           </g>
 
           {/* Driver Assist indicator */}
@@ -319,6 +346,19 @@ export default function IllusionTestCanvas({ mode, onComplete }) {
           <p className="text-sm font-semibold text-gray-700 mb-2">
             {mode === 'assist' ? '🤖 Driver Assist is Active - You can intervene if needed' : '🚗 Manual Control - You are in control'}
           </p>
+          
+          {/* Show current action status */}
+          {userAction && (
+            <div className="mb-3 p-2 bg-yellow-100 border border-yellow-400 rounded">
+              <p className="text-sm font-bold text-yellow-800">
+                Action Recorded: {userAction.toUpperCase()} 
+                {timingRef.current.actionTime && timingRef.current.startTime && 
+                  ` (${((timingRef.current.actionTime - timingRef.current.startTime) / 1000).toFixed(2)}s)`
+                }
+              </p>
+            </div>
+          )}
+          
           <div className="flex justify-center gap-8 text-xs text-gray-600">
             <div>
               <kbd className="px-2 py-1 bg-gray-200 rounded">←</kbd> or <kbd className="px-2 py-1 bg-gray-200 rounded">A</kbd> Left
