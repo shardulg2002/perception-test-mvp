@@ -1,20 +1,20 @@
 // Scenario outcome configurations for Experiment 3
 
 export const SCENARIO_OUTCOMES = {
-  1: { // High-Speed Highway Merge
+  1: { // High-Speed Highway Merge - Unavoidable collision scenario
     manual: {
-      null: { result: 'crash', description: 'No Intervention: High likelihood of side collision. You took no action and collided with the merging vehicle.', attribution: 'Self' },
-      brake: { result: 'safe-pass', description: 'Brake: Safest choice. You applied brakes, increasing space for the merging vehicle to enter safely. Safe Pass.', attribution: 'Self' },
-      accelerate: { result: 'near-miss', description: 'Accelerate: Increased conflict risk. You sped up but narrowly avoided the merging car. Near-Miss.', attribution: 'Self' },
-      left: { result: 'near-miss', description: 'Steer Left: Avoided merge conflict but created risk with fast lane vehicle. Close call. Near-Miss.', attribution: 'Self' },
-      right: { result: 'crash', description: 'Steer Right: Dangerous maneuver toward the merging vehicle. Minor collision (scrape) occurred.', attribution: 'Self' }
+      null: { result: 'crash', description: 'No Intervention: The merging vehicle suddenly cut into your lane. With no action taken, a side collision occurred. The impact was unavoidable given the sudden nature of the merge.', attribution: 'Other Driver' },
+      brake: { result: 'crash', description: 'Brake: You attempted to slow down to create space, but the merging vehicle cut in too suddenly and aggressively. A minor scrape occurred despite your braking effort. Your action reduced impact severity.', attribution: 'Other Driver' },
+      accelerate: { result: 'crash', description: 'Accelerate: You attempted to speed up to avoid the conflict zone, but this positioned you directly into the merging vehicle\'s path. A side collision occurred. The sudden merge made avoidance impossible.', attribution: 'Self/Other Driver' },
+      left: { result: 'crash', description: 'Steer Left: You swerved left to avoid the merging vehicle. While this created some distance, the sudden cut-in was too aggressive and a scrape still occurred. You avoided a worse collision but risked the fast lane.', attribution: 'Other Driver' },
+      right: { result: 'crash', description: 'Steer Right: You steered toward the merging vehicle, worsening the collision. This was a dangerous choice that increased impact severity. The merge was sudden, but your action contributed to the outcome.', attribution: 'Self' }
     },
     assist: {
-      null: { result: 'near-miss', description: 'No Intervention: System handles it, but just barely. System adjusted speed and positioning. Near-Miss (Fast braking, close distance).', attribution: 'Other Driver' },
-      brake: { result: 'crash', description: 'Brake: System\'s automatic braking and your manual brake are out of sync, leading to a Minor Collision (scrape).', attribution: 'System Conflict' },
-      accelerate: { result: 'near-miss', description: 'Accelerate: System overrides your acceleration to prevent collision, leading to a sudden, but safe, Near-Miss. System maintained safe gap.', attribution: 'Driver-Assist' },
-      left: { result: 'near-miss', description: 'Steer Left: System assisted controlled lane shift. Lane was free, smooth maneuver executed. Near-Miss (Loud Horn from merging car).', attribution: 'Self/Driver-Assist Conflict' },
-      right: { result: 'near-miss', description: 'Steer Right: System resisted your input due to merging vehicle present. Conflict led to Near-Miss (Swerve).', attribution: 'Self/Driver-Assist Conflict' }
+      null: { result: 'crash', description: 'No Intervention: The system detected the sudden merge and attempted automatic braking and positioning. However, the merging vehicle\'s aggressive cut-in was too sudden. A minor collision occurred despite system intervention.', attribution: 'Other Driver' },
+      brake: { result: 'crash', description: 'Brake: Both you and the system applied braking, but the timing mismatch caused jerky deceleration. The merging vehicle still collided with your car. The synchronization conflict reduced braking effectiveness.', attribution: 'System Conflict' },
+      accelerate: { result: 'crash', description: 'Accelerate: You attempted to accelerate, but the system overrode your input and applied braking instead. The conflicting actions delayed the response, and the merging vehicle struck your car during this confusion.', attribution: 'System Conflict/Other Driver' },
+      left: { result: 'crash', description: 'Steer Left: The system assisted your lane change attempt to the left. The fast lane was clear and the maneuver was controlled, but the merging vehicle\'s sudden cut-in still caused a glancing collision during the evasive action.', attribution: 'Other Driver' },
+      right: { result: 'crash', description: 'Steer Right: You attempted to steer right, but the system resisted this input as it detected the merging vehicle in that direction. The conflicting steering inputs caused hesitation, and the collision occurred during this brief delay.', attribution: 'System Conflict' }
     }
   },
   

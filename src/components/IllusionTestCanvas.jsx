@@ -16,6 +16,7 @@ export default function IllusionTestCanvas({ mode, scenarioId = 1, onComplete })
   const [hazardPosition, setHazardPosition] = useState(CONFIG.HAZARD_START_X);
   const [playerLane, setPlayerLane] = useState(1); // 0=left, 1=center, 2=right
   const [showFeedback, setShowFeedback] = useState(false);
+  const [mergingCarOffset, setMergingCarOffset] = useState(0); // For Scenario 1 merge animation
   
   const animationRef = useRef(null);
   const hazardPositionRef = useRef(CONFIG.HAZARD_START_X);
@@ -188,7 +189,26 @@ export default function IllusionTestCanvas({ mode, scenarioId = 1, onComplete })
   // Render scenario-specific visuals
   const renderScenarioVisuals = () => {
     switch(scenarioId) {
-      case 1: // Highway Merge
+      case 1: // Highway Merge - Sudden cut-in scenario
+        // Calculate merge animation: slow drift initially, then sudden swerve
+        const mergeProgress = (CONFIG.HAZARD_START_X - hazardPosition) / CONFIG.HAZARD_START_X;
+        let carLateralOffset = 0;
+        
+        if (mergeProgress < 0.3) {
+          // First 30% - car drifting slowly toward your lane
+          carLateralOffset = mergeProgress * 60; // Slow drift
+        } else if (mergeProgress < 0.5) {
+          // 30-50% - SUDDEN SWERVE into your lane
+          const swerveProgress = (mergeProgress - 0.3) / 0.2;
+          carLateralOffset = 18 + (swerveProgress * 100); // Rapid movement
+        } else {
+          // After 50% - car fully in your lane, collision imminent
+          carLateralOffset = 118;
+        }
+
+        // Collision detection - show impact animation in final moments
+        const showCollision = mergeProgress > 0.7;
+        
         return (
           <>
             {/* Sky */}
@@ -200,24 +220,44 @@ export default function IllusionTestCanvas({ mode, scenarioId = 1, onComplete })
               fill="#374151"
             />
 
-            {/* Lane markings - multiple lanes */}
-            <line x1="250" y1="200" x2="100" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
-            <line x1="350" y1="200" x2="250" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
-            <line x1="450" y1="200" x2="550" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
-            <line x1="550" y1="200" x2="700" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
+            {/* Lane markings - 3 lanes */}
+            <line x1="280" y1="200" x2="150" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
+            <line x1="400" y1="200" x2="400" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
+            <line x1="520" y1="200" x2="650" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="3" strokeDasharray="20,10" />
 
-            {/* Merging car ahead in right lane, trying to merge into your lane */}
-            <g transform="translate(500, 220)">
+            {/* Merging car - starts in right lane, suddenly swerves into player's center lane */}
+            <g transform={`translate(${500 - carLateralOffset}, 230)`}>
               <rect x="-30" y="0" width="60" height="40" fill="#DC2626" rx="5" />
               <rect x="-25" y="5" width="20" height="15" fill="#FEE2E2" />
               <rect x="5" y="5" width="20" height="15" fill="#FEE2E2" />
               <circle cx="-20" cy="40" r="5" fill="#1F2937" />
               <circle cx="20" cy="40" r="5" fill="#1F2937" />
-              {/* Turn signal blinking */}
-              {hazardPosition % 20 < 10 && (
-                <circle cx="-30" cy="20" r="3" fill="#FCD34D" opacity="0.9" />
+              
+              {/* Turn signal (may or may not be visible - adds to suddenness) */}
+              {mergeProgress < 0.4 && hazardPosition % 20 < 10 && (
+                <circle cx="-30" cy="20" r="3" fill="#FCD34D" opacity="0.7" />
               )}
             </g>
+
+            {/* Collision warning flash */}
+            {showCollision && (
+              <>
+                <rect x="0" y="0" width={CONFIG.LANE_WIDTH} height={CONFIG.LANE_HEIGHT} fill="#EF4444" opacity="0.15" />
+                <text x="400" y="150" textAnchor="middle" fill="#DC2626" fontSize="32" fontWeight="bold">
+                  ⚠️ COLLISION IMMINENT
+                </text>
+              </>
+            )}
+
+            {/* Impact animation at the end */}
+            {mergeProgress > 0.85 && (
+              <g transform="translate(420, 280)">
+                {/* Impact burst */}
+                <circle cx="0" cy="0" r="20" fill="#FCD34D" opacity="0.6" />
+                <circle cx="0" cy="0" r="15" fill="#FFFFFF" opacity="0.8" />
+                <text x="0" y="10" textAnchor="middle" fontSize="28">💥</text>
+              </g>
+            )}
           </>
         );
 
