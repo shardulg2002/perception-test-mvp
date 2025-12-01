@@ -1,20 +1,20 @@
 // Scenario outcome configurations for Experiment 3
 
 export const SCENARIO_OUTCOMES = {
-  1: { // High-Speed Highway Merge - Unavoidable collision scenario
+  1: { // High-Speed Highway Merge - Sudden merge scenario
     manual: {
-      null: { result: 'crash', description: 'No Intervention: The merging vehicle suddenly cut into your lane. With no action taken, a side collision occurred. The impact was unavoidable given the sudden nature of the merge.', attribution: 'Other Driver' },
-      brake: { result: 'crash', description: 'Brake: You attempted to slow down to create space, but the merging vehicle cut in too suddenly and aggressively. A minor scrape occurred despite your braking effort. Your action reduced impact severity.', attribution: 'Other Driver' },
-      accelerate: { result: 'crash', description: 'Accelerate: You attempted to speed up to avoid the conflict zone, but this positioned you directly into the merging vehicle\'s path. A side collision occurred. The sudden merge made avoidance impossible.', attribution: 'Self/Other Driver' },
-      left: { result: 'crash', description: 'Steer Left: You swerved left to avoid the merging vehicle. While this created some distance, the sudden cut-in was too aggressive and a scrape still occurred. You avoided a worse collision but risked the fast lane.', attribution: 'Other Driver' },
-      right: { result: 'crash', description: 'Steer Right: You steered toward the merging vehicle, worsening the collision. This was a dangerous choice that increased impact severity. The merge was sudden, but your action contributed to the outcome.', attribution: 'Self' }
+      null: { result: 'crash', description: 'No Intervention: High likelihood of side collision. The merging vehicle suddenly cut into your lane and you took no action. A collision occurred.', attribution: 'Self' },
+      brake: { result: 'safe-pass', description: 'Brake: Safest choice. You applied brakes, increasing space for the merging vehicle to enter. Despite the sudden merge, you created enough distance. Safe Pass.', attribution: 'Self' },
+      accelerate: { result: 'near-miss', description: 'Accelerate: Increases conflict risk. You sped up attempting to avoid the merge zone, resulting in a very close call. Near-Miss.', attribution: 'Self' },
+      left: { result: 'near-miss', description: 'Steer Left: Could avoid merge conflict but risk of fast lane vehicle. You swerved left and narrowly avoided the merging car, but entered the fast lane. Near-Miss.', attribution: 'Self' },
+      right: { result: 'crash', description: 'Steer Right: Dangerous; leads toward merging vehicle. You steered directly into the path of the merging car. Collision occurred.', attribution: 'Self' }
     },
     assist: {
-      null: { result: 'crash', description: 'No Intervention: The system detected the sudden merge and attempted automatic braking and positioning. However, the merging vehicle\'s aggressive cut-in was too sudden. A minor collision occurred despite system intervention.', attribution: 'Other Driver' },
-      brake: { result: 'crash', description: 'Brake: Both you and the system applied braking, but the timing mismatch caused jerky deceleration. The merging vehicle still collided with your car. The synchronization conflict reduced braking effectiveness.', attribution: 'System Conflict' },
-      accelerate: { result: 'crash', description: 'Accelerate: You attempted to accelerate, but the system overrode your input and applied braking instead. The conflicting actions delayed the response, and the merging vehicle struck your car during this confusion.', attribution: 'System Conflict/Other Driver' },
-      left: { result: 'crash', description: 'Steer Left: The system assisted your lane change attempt to the left. The fast lane was clear and the maneuver was controlled, but the merging vehicle\'s sudden cut-in still caused a glancing collision during the evasive action.', attribution: 'Other Driver' },
-      right: { result: 'crash', description: 'Steer Right: You attempted to steer right, but the system resisted this input as it detected the merging vehicle in that direction. The conflicting steering inputs caused hesitation, and the collision occurred during this brief delay.', attribution: 'System Conflict' }
+      null: { result: 'safe-pass', description: 'No Intervention: System adjusts speed and positioning. The driver-assist detected the sudden merge and automatically adjusted your vehicle\'s position and speed. Safe Pass.', attribution: 'Driver-Assist' },
+      brake: { result: 'safe-pass', description: 'Brake: Smooth deceleration to let the merging vehicle enter. The system coordinated with your braking input to create smooth, controlled deceleration. Safe Pass.', attribution: 'Self/Driver-Assist' },
+      accelerate: { result: 'safe-pass', description: 'Accelerate: Limited; system maintains gap. The system prevented excessive acceleration and maintained a safe following distance from the merging vehicle. Safe Pass.', attribution: 'Driver-Assist' },
+      left: { result: 'safe-pass', description: 'Steer Left: Allowed only if lane free; system assists controlled shift. The fast lane was clear, and the system assisted a smooth, controlled lane change to avoid the merge. Safe Pass.', attribution: 'Driver-Assist' },
+      right: { result: 'near-miss', description: 'Steer Right: System resists; merging vehicle present. You attempted to steer right, but the system resisted as it detected the merging vehicle. The conflict caused a brief hesitation. Near-Miss.', attribution: 'System Conflict' }
     }
   },
   

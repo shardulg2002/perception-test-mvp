@@ -202,12 +202,15 @@ export default function IllusionTestCanvas({ mode, scenarioId = 1, onComplete })
           const swerveProgress = (mergeProgress - 0.3) / 0.2;
           carLateralOffset = 18 + (swerveProgress * 100); // Rapid movement
         } else {
-          // After 50% - car fully in your lane, collision imminent
+          // After 50% - car continuing to merge into your lane
           carLateralOffset = 118;
         }
 
-        // Collision detection - show impact animation in final moments
-        const showCollision = mergeProgress > 0.7;
+        // Determine if collision will occur based on user action
+        const willCollide = (mode === 'manual' && (!userAction || userAction === 'right')) ||
+                           (mode === 'assist' && userAction === 'right');
+        const showCollisionWarning = mergeProgress > 0.6 && willCollide;
+        const showImpact = mergeProgress > 0.85 && willCollide;
         
         return (
           <>
@@ -233,14 +236,14 @@ export default function IllusionTestCanvas({ mode, scenarioId = 1, onComplete })
               <circle cx="-20" cy="40" r="5" fill="#1F2937" />
               <circle cx="20" cy="40" r="5" fill="#1F2937" />
               
-              {/* Turn signal (may or may not be visible - adds to suddenness) */}
-              {mergeProgress < 0.4 && hazardPosition % 20 < 10 && (
+              {/* Turn signal (brief, may be missed) */}
+              {mergeProgress < 0.35 && hazardPosition % 20 < 10 && (
                 <circle cx="-30" cy="20" r="3" fill="#FCD34D" opacity="0.7" />
               )}
             </g>
 
-            {/* Collision warning flash */}
-            {showCollision && (
+            {/* Collision warning flash - only if crash outcome */}
+            {showCollisionWarning && (
               <>
                 <rect x="0" y="0" width={CONFIG.LANE_WIDTH} height={CONFIG.LANE_HEIGHT} fill="#EF4444" opacity="0.15" />
                 <text x="400" y="150" textAnchor="middle" fill="#DC2626" fontSize="32" fontWeight="bold">
@@ -249,8 +252,8 @@ export default function IllusionTestCanvas({ mode, scenarioId = 1, onComplete })
               </>
             )}
 
-            {/* Impact animation at the end */}
-            {mergeProgress > 0.85 && (
+            {/* Impact animation - only for crash outcomes */}
+            {showImpact && (
               <g transform="translate(420, 280)">
                 {/* Impact burst */}
                 <circle cx="0" cy="0" r="20" fill="#FCD34D" opacity="0.6" />
