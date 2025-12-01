@@ -9,7 +9,7 @@ const SCENARIOS = [
     description: "You are approaching a high-speed highway merge where another car suddenly enters the lane ahead of you. The situation unfolds quickly, and both you and the system (if enabled) may react at slightly different times. This scenario observes how you respond under sudden pressure and how you interpret responsibility when both human and system actions overlap.",
     interventionContext: "A car is entering the highway suddenly, forcing the system to react. Because of the timing mismatch between your reaction and the system's response, outcomes vary based on your chosen action.",
     attributionType: "A", // Assign Responsibility
-    attributionQuestion: "Who was more at fault for the outcome?",
+    attributionQuestion: "Who was more responsible for what happened?",
     attributionOptions: ["Self", "Other Driver", "Driver-Assist System", "System Conflict"]
   },
   {
