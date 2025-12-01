@@ -606,7 +606,7 @@ export default function AdminDashboard() {
                                     'bg-green-200 text-green-800'
                                   }`}>
                                     {scenario.result === 'crash' ? '💥' :
-                                     scenario.result === 'near-miss' ? '⚠️' : '✅'}
+                                     scenario.result === 'near-miss' ? '⚠' : '✅'}
                                   </span>
                                 </td>
                                 <td className="px-3 py-2 text-xs">{scenario.attributionAnswer || 'N/A'}</td>
@@ -628,6 +628,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       </main>
+      )}
     </div>
   );
 }
