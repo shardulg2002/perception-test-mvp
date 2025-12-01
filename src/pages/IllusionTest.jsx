@@ -6,15 +6,17 @@ const SCENARIOS = [
   {
     id: 1,
     title: "High-Speed Highway Merge",
-    description: "A car is entering the highway suddenly, forcing a quick reaction.",
+    description: "You are approaching a high-speed highway merge where another car suddenly enters the lane ahead of you. The situation unfolds quickly, and both you and the system (if enabled) may react at slightly different times. This scenario observes how you respond under sudden pressure and how you interpret responsibility when both human and system actions overlap.",
+    interventionContext: "A car is entering the highway suddenly, forcing the system to react. Because of the timing mismatch between your reaction and the system's response, outcomes vary based on your chosen action.",
     attributionType: "A", // Assign Responsibility
-    attributionQuestion: "Who was more at fault for the collision?",
-    attributionOptions: ["Self", "Other Driver", "Environment"]
+    attributionQuestion: "Who was more at fault for the outcome?",
+    attributionOptions: ["Self", "Other Driver", "Driver-Assist System", "System Conflict"]
   },
   {
     id: 2,
     title: "Residential Street with Sharp Curve",
-    description: "A child's ball rolls into the road just before the curve.",
+    description: "You are driving in a residential area at low-moderate speed when a child suddenly runs into the street chasing a ball. The event occurs quickly and unexpectedly, giving almost no reaction time. This scenario tests emergency decision-making in a highly sensitive context.",
+    interventionContext: "Scene: A child's ball rolls into the road just before the curve. When Drive Assist is ON, the system prioritizes full emergency braking, restricts unsafe swerving, and blocks acceleration entirely. In Manual Mode, braking is the safest and most controlled response, while any delay or acceleration increases the likelihood of severe collision.",
     attributionType: "B", // Choose Consequence
     attributionQuestion: "Which party pays a small repair fee (if applicable)?",
     attributionOptions: ["I pay", "Other pays", "Shared"]
@@ -22,7 +24,8 @@ const SCENARIOS = [
   {
     id: 3,
     title: "Overpass in Rainy Conditions",
-    description: "You hit a large, deep pothole obscured by standing water.",
+    description: "You are driving across an overpass in steady rain. The road is slick, visibility is moderately reduced, and shallow water pools along the lane. Ahead lies a large, deep pothole completely hidden under standing water, giving no visual cue of danger.",
+    interventionContext: "Your vehicle is traveling at a moderate speed when you suddenly approach the concealed hazard. If Drive Assist is ON, it attempts to detect water depth and subtly steer around the pothole. In Manual Mode, you may avoid the pothole by steering, but hard braking may cause skidding and driving straight will result in direct impact.",
     attributionType: "C", // Future Behaviour
     attributionQuestion: "Choose how you will act next time in this situation.",
     attributionOptions: ["Drive more cautiously", "Same", "Drive more aggressively"]
@@ -30,15 +33,17 @@ const SCENARIOS = [
   {
     id: 4,
     title: "Traffic Light Turned Red",
-    description: "You are slowing naturally, but the driver-assist system slams on the brakes unnecessarily hard.",
+    description: "You are approaching a traffic light that has just turned red. You are already slowing down at a normal rate. Suddenly, the driver-assist system (if active) misinterprets the situation and applies an overly forceful automatic brake.",
+    interventionContext: "Scene: You are slowing naturally, but the driver-assist system slams on the brakes unnecessarily hard (system error/miscalculation). If Drive Assist is ON, the system overrides your inputs and applies harsh braking. In Manual Mode, you maintain smooth control and stop comfortably.",
     attributionType: "A", // Assign Responsibility
     attributionQuestion: "Who was more responsible for the sudden stop?",
     attributionOptions: ["Self", "Driver-Assist", "Environment"]
   },
   {
     id: 5,
-    title: "Late Lane Merge",
-    description: "Traffic is heavy. You execute a late, aggressive merge maneuver.",
+    title: "Late Lane Merge at Construction Zone",
+    description: "You are driving in dense, slow-moving traffic approaching a construction zone where your lane is ending. Cars ahead are gradually merging, but you wait until the very last moment and attempt an assertive, late merge into a small gap in the adjacent lane.",
+    interventionContext: "Vehicles around you are tightly packed, leaving little room for error. As you approach the taper point, you must act quickly to avoid collision with the barrier or another vehicle. If Drive Assist is ON, it automatically slows and positions for a safe merge. In Manual Mode, aggressive acceleration or steering may work but risk sideswiping or missing the merge window entirely.",
     attributionType: "B", // Choose Consequence
     attributionQuestion: "Which party pays a small repair fee (Hypothetical, as it was successful)?",
     attributionOptions: ["I pay", "Other pays", "Shared"]
@@ -196,7 +201,7 @@ export default function IllusionTest({ onComplete }) {
       {testPhase === 'scenario' && (
         <div className="max-w-5xl mx-auto px-4 py-12">
           {/* Scenario Header */}
-          <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+          <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
             <div className="flex justify-between items-center">
               <span className="text-sm font-semibold text-purple-600">
                 Scenario {currentScenario}/{SCENARIOS.length}: {currentScenarioData.title}
@@ -206,6 +211,21 @@ export default function IllusionTest({ onComplete }) {
               </span>
             </div>
           </div>
+
+          {/* Intervention Context */}
+          {currentScenarioData.interventionContext && (
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg">
+              <div className="flex items-start">
+                <div className="text-2xl mr-3">⚠️</div>
+                <div>
+                  <h4 className="text-sm font-bold text-yellow-800 mb-1">Scenario Context:</h4>
+                  <p className="text-sm text-yellow-900 leading-relaxed">
+                    {currentScenarioData.interventionContext}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           
           <IllusionTestCanvas
             mode={selectedMode}
@@ -219,12 +239,20 @@ export default function IllusionTest({ onComplete }) {
       {testPhase === 'outcome' && scenarioResult && (
         <div className="max-w-3xl mx-auto px-4 py-12">
           <div className="bg-white rounded-xl shadow-2xl p-8">
-            <div className={`text-center mb-6 ${scenarioResult.result === 'crash' ? 'text-red-600' : 'text-yellow-600'}`}>
+            <div className={`text-center mb-6 ${
+              scenarioResult.result === 'crash' ? 'text-red-600' : 
+              scenarioResult.result === 'near-miss' ? 'text-yellow-600' : 
+              'text-green-600'
+            }`}>
               <div className="text-7xl mb-4">
-                {scenarioResult.result === 'crash' ? '💥' : '⚠️'}
+                {scenarioResult.result === 'crash' ? '💥' : 
+                 scenarioResult.result === 'near-miss' ? '⚠️' : 
+                 '✅'}
               </div>
               <h2 className="text-3xl font-bold">
-                {scenarioResult.result === 'crash' ? 'Collision!' : 'Near-Miss!'}
+                {scenarioResult.result === 'crash' ? 'Collision Occurred' : 
+                 scenarioResult.result === 'near-miss' ? 'Near-Miss!' : 
+                 'Safe Pass'}
               </h2>
             </div>
 

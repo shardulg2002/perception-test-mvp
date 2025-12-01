@@ -219,7 +219,7 @@ export default function IllusionTestCanvas({ mode, scenarioId = 1, onComplete })
           </>
         );
 
-      case 2: // Residential Curve with Ball
+      case 2: // Residential Curve with Ball and Child
         return (
           <>
             {/* Sky */}
@@ -240,12 +240,27 @@ export default function IllusionTestCanvas({ mode, scenarioId = 1, onComplete })
             {/* Single lane marking (narrow street) */}
             <line x1="400" y1="200" x2="${CONFIG.LANE_WIDTH/2}" y2={CONFIG.LANE_HEIGHT} stroke="#FCD34D" strokeWidth="2" strokeDasharray="15,10" />
 
-            {/* Child's ball rolling into street */}
+            {/* Child chasing ball into street */}
             {hazardPosition > 300 && (
               <g transform={`translate(${hazardPosition - 100}, ${220 + (700 - hazardPosition) * 0.3})`}>
-                <circle cx="0" cy="0" r="15" fill="#EF4444" />
-                <circle cx="-5" cy="-5" r="4" fill="#FFFFFF" />
-                <circle cx="5" cy="5" r="4" fill="#FFFFFF" />
+                {/* Ball rolling ahead */}
+                <circle cx="20" cy="0" r="12" fill="#EF4444" />
+                <circle cx="15" cy="-5" r="3" fill="#FFFFFF" />
+                <circle cx="25" cy="5" r="3" fill="#FFFFFF" />
+                
+                {/* Child running after ball */}
+                <g transform="translate(-15, 0)">
+                  {/* Head */}
+                  <circle cx="0" cy="-25" r="8" fill="#FBBF24" />
+                  {/* Body */}
+                  <rect x="-6" y="-17" width="12" height="18" fill="#3B82F6" rx="2" />
+                  {/* Arms (running position) */}
+                  <line x1="-6" y1="-15" x2="-12" y2="-8" stroke="#FBBF24" strokeWidth="3" strokeLinecap="round" />
+                  <line x1="6" y1="-15" x2="12" y2="-8" stroke="#FBBF24" strokeWidth="3" strokeLinecap="round" />
+                  {/* Legs (running) */}
+                  <line x1="-3" y1="1" x2="-8" y2="10" stroke="#1F2937" strokeWidth="3" strokeLinecap="round" />
+                  <line x1="3" y1="1" x2="8" y2="10" stroke="#1F2937" strokeWidth="3" strokeLinecap="round" />
+                </g>
               </g>
             )}
           </>
