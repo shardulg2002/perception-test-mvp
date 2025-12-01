@@ -11,7 +11,7 @@ const CONFIG = {
 
 export default function FuelPumpTest({ onComplete }) {
   const [currentTrial, setCurrentTrial] = useState(1);
-  const [trialState, setTrialState] = useState('ready'); // ready | pumping | stopped | exploded
+  const [trialState, setTrialState] = useState('ready'); // ready | pumping | stopped | timeout | exploded
   const [pumpCount, setPumpCount] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
   const [trialPoints, setTrialPoints] = useState(0);
@@ -113,8 +113,8 @@ export default function FuelPumpTest({ onComplete }) {
 
       // Check for 15-second timeout
       if (elapsed >= CONFIG.TRIAL_DURATION) {
-        console.log('💥 EXPLOSION! 15-second timeout reached');
-        handleExplosion();
+        console.log('⏰ TIMEOUT! 15 seconds reached - points secured automatically');
+        handleTimeout();
         return;
       }
 
@@ -156,6 +156,33 @@ export default function FuelPumpTest({ onComplete }) {
     });
 
     console.log(`📊 Trial ${currentTrial} complete - Points: ${trialPoints} | Total: ${newTotal}`);
+  };
+
+  // Handle timeout - secure points automatically
+  const handleTimeout = () => {
+    console.log('⏰ TIMEOUT! Points secured automatically');
+    
+    // Cancel animation
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+
+    // Add trial points to total
+    const newTotal = totalPoints + trialPoints;
+    setTotalPoints(newTotal);
+    setTrialState('timeout');
+    
+    // Record trial result
+    trialResults.current.push({
+      trial: currentTrial,
+      outcome: 'timeout',
+      pumps: pumpCount,
+      points: trialPoints,
+      timeElapsed: elapsedTime,
+      blastPumps: blastPumpsRef.current
+    });
+
+    console.log(`📊 Trial ${currentTrial} timeout - Points secured: ${trialPoints} | Total: ${newTotal}`);
   };
 
   // Handle explosion
@@ -327,6 +354,24 @@ export default function FuelPumpTest({ onComplete }) {
             </text>
           </g>
 
+          {/* Timer Display */}
+          {trialState === 'pumping' && (
+            <g transform="translate(30, 230)">
+              <rect x="0" y="0" width="180" height="60" fill="white" opacity="0.9" rx="10" />
+              <text x="90" y="25" textAnchor="middle" fontSize="14" fill="#6B7280">Time Left</text>
+              <text 
+                x="90" 
+                y="50" 
+                textAnchor="middle" 
+                fontSize="28" 
+                fontWeight="bold" 
+                fill={((CONFIG.TRIAL_DURATION - elapsedTime) / 1000) <= 5 ? "#DC2626" : "#F59E0B"}
+              >
+                {Math.max(0, Math.ceil((CONFIG.TRIAL_DURATION - elapsedTime) / 1000))}s
+              </text>
+            </g>
+          )}
+
           {/* Ready State Message */}
           {trialState === 'ready' && (
             <text x="300" y="370" textAnchor="middle" fontSize="18" fontWeight="bold" fill="#1F2937">
@@ -347,12 +392,16 @@ export default function FuelPumpTest({ onComplete }) {
           </button>
         )}
 
-        {(trialState === 'stopped' || trialState === 'exploded') && (
+        {(trialState === 'stopped' || trialState === 'timeout' || trialState === 'exploded') && (
           <div className="text-center">
             <div className="mb-4">
               {trialState === 'stopped' ? (
                 <div className="text-green-600 text-2xl font-bold">
                   ✅ Points Secured: +{trialPoints}
+                </div>
+              ) : trialState === 'timeout' ? (
+                <div className="text-blue-600 text-2xl font-bold">
+                  ⏰ Time's Up! Points Secured: +{trialPoints}
                 </div>
               ) : (
                 <div className="text-red-600 text-2xl font-bold">
@@ -378,8 +427,9 @@ export default function FuelPumpTest({ onComplete }) {
         <h3 className="font-bold text-blue-900 mb-2">How to Play:</h3>
         <ul className="text-sm text-blue-800 space-y-1">
           <li>• Press <kbd className="px-2 py-1 bg-white rounded border">SPACEBAR</kbd> to pump fuel (+1 point per pump)</li>
-          <li>• The car will explode after a <strong>random number of pumps (10-40)</strong> OR after <strong>15 seconds</strong></li>
-          <li>• Click <strong>STOP</strong> before explosion to secure your points</li>
+          <li>• The car will explode if you pump <strong>too much (random 10-40 pumps)</strong></li>
+          <li>• You have <strong>15 seconds</strong> per trial - when time runs out, your points are automatically secured</li>
+          <li>• Click <strong>STOP</strong> anytime to secure your points early</li>
           <li>• If the car explodes, you lose all points for that trial</li>
           <li>• Successfully secured points carry forward to the next trial</li>
           <li>• Complete {CONFIG.TOTAL_TRIALS} trials to finish the test</li>
