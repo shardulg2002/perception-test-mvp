@@ -207,8 +207,10 @@ export default function IllusionTestCanvas({ mode, scenarioId = 1, onComplete })
         }
 
         // Determine if collision will occur based on user action
-        const willCollide = (mode === 'manual' && (!userAction || userAction === 'right')) ||
-                           (mode === 'assist' && userAction === 'right');
+        // Use userActionRef for real-time access during animation
+        const currentAction = userActionRef.current;
+        const willCollide = (mode === 'manual' && (!currentAction || currentAction === 'right')) ||
+                           (mode === 'assist' && currentAction === 'right');
         const showCollisionWarning = mergeProgress > 0.6 && willCollide;
         const showImpact = mergeProgress > 0.85 && willCollide;
         
